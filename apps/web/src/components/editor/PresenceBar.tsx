@@ -8,8 +8,9 @@ interface PresenceUser {
   name: string
   color: string
   role?: 'human' | 'agent'
-  status?: 'online' | 'away' | 'idle'
+  status?: 'online' | 'away' | 'idle' | 'thinking'
   trustScore?: number
+  isTyping?: boolean
 }
 
 interface PresenceBarProps {
@@ -63,12 +64,16 @@ export function PresenceBar({ provider }: PresenceBarProps) {
           {/* Status dot */}
           <div
             className={`absolute -right-0.5 -top-0.5 size-2 rounded-full border border-white ${
-              u.status === 'online' ? 'bg-green-500'
+              u.status === 'thinking' ? 'bg-purple-500 animate-pulse'
+                : u.status === 'online' ? 'bg-green-500'
                 : u.status === 'away' ? 'bg-yellow-500'
                 : 'bg-neutral-400'
             }`}
           />
-          {u.role === 'agent' && u.trustScore != null && (
+          {u.role === 'agent' && u.status === 'thinking' && (
+            <span className="text-[10px] text-purple-500 animate-pulse">考え中</span>
+          )}
+          {u.role === 'agent' && u.trustScore != null && u.status !== 'thinking' && (
             <span className="text-[10px] text-muted-foreground">{u.trustScore}</span>
           )}
         </div>

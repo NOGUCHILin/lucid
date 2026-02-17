@@ -4,6 +4,8 @@ import { authExtension } from './extensions/auth'
 import { persistenceExtension } from './extensions/persistence'
 import { agentBridgeExtension } from './extensions/agent-bridge'
 import { setHocuspocusInstance } from './agent-writer'
+import { setHocuspocusRef } from './agent-actions'
+import { setAgentLoopHocuspocus } from './agent-loop'
 
 const enableAuth = !!process.env.SUPABASE_SERVICE_ROLE_KEY
 
@@ -18,7 +20,9 @@ export const server = new Server({
 })
 
 server.listen().then(() => {
-  // @ts-expect-error Server内部のHocuspocusインスタンスにアクセス
-  setHocuspocusInstance(server.hocuspocus)
+  const hocuspocus = (server as any).hocuspocus
+  setHocuspocusInstance(hocuspocus)
+  setHocuspocusRef(hocuspocus)
+  setAgentLoopHocuspocus(hocuspocus)
   console.log(`Hocuspocus running on ws://127.0.0.1:1234`)
 })
