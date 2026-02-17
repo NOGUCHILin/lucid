@@ -2,6 +2,8 @@
 
 import { useAgent } from '@/hooks/useAgent'
 import { TrustSlider } from './TrustSlider'
+import { TrustHistory } from './TrustHistory'
+import { CostBar } from './CostBar'
 import { FundTransfer } from './FundTransfer'
 
 interface AgentPanelProps {
@@ -44,17 +46,17 @@ export function AgentPanel({ agentId }: AgentPanelProps) {
 
       {/* Wallet */}
       {agent.wallet && (
-        <div className="rounded-lg border p-3 space-y-1">
+        <div className="rounded-lg border p-3 space-y-3">
           <div className="flex justify-between text-sm">
             <span>残高</span>
             <span className="font-mono">¥{agent.wallet.balance.toLocaleString()}</span>
           </div>
-          <div className="flex justify-between text-xs text-muted-foreground">
-            <span>本日使用</span>
-            <span>¥{agent.wallet.daily_spent.toLocaleString()} / ¥{agent.wallet.daily_limit.toLocaleString()}</span>
-          </div>
+          <CostBar dailySpent={agent.wallet.daily_spent} dailyLimit={agent.wallet.daily_limit} />
         </div>
       )}
+
+      {/* Trust History */}
+      <TrustHistory agentId={agent.id} />
 
       {/* Fund Transfer */}
       <FundTransfer agentId={agent.id} onTransfer={refetch} />

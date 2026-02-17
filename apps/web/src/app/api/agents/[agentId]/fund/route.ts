@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@lucid/database'
+import { createServerClient, createAdminClient } from '@lucid/database'
 
-// POST /api/agents/[agentId]/fund — transfer funds from user to agent
+// POST /api/agents/[agentId]/fund — transfer funds from user to agent (atomic RPC)
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ agentId: string }> }
@@ -20,22 +20,24 @@ export async function POST(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  const admin = createAdminClient()
+
   // Get user wallet
-  const { data: userWallet } = await supabase
+  const { data: userWallet } = await (admin as any)
     .from('wallets')
-    .select('*')
+    .select('id')
     .eq('entity_id', user.id)
     .eq('entity_type', 'user')
     .single()
 
-  if (!userWallet || userWallet.balance < amount) {
-    return NextResponse.json({ error: 'Insufficient balance' }, { status: 400 })
+  if (!userWallet) {
+    return NextResponse.json({ error: 'User wallet not found' }, { status: 404 })
   }
 
   // Get agent wallet
-  const { data: agentWallet } = await supabase
+  const { data: agentWallet } = await (admin as any)
     .from('wallets')
-    .select('*')
+    .select('id')
     .eq('entity_id', agentId)
     .eq('entity_type', 'agent')
     .single()
@@ -44,34 +46,19 @@ export async function POST(
     return NextResponse.json({ error: 'Agent wallet not found' }, { status: 404 })
   }
 
-  // Transfer: deduct from user, add to agent
-  const { error: deductError } = await supabase
-    .from('wallets')
-    .update({ balance: userWallet.balance - amount })
-    .eq('id', userWallet.id)
-
-  if (deductError) {
-    return NextResponse.json({ error: deductError.message }, { status: 500 })
-  }
-
-  const { error: addError } = await supabase
-    .from('wallets')
-    .update({ balance: agentWallet.balance + amount })
-    .eq('id', agentWallet.id)
-
-  if (addError) {
-    return NextResponse.json({ error: addError.message }, { status: 500 })
-  }
-
-  // Record transaction
-  await supabase.from('transactions').insert({
-    type: 'transfer',
-    from_wallet_id: userWallet.id,
-    to_wallet_id: agentWallet.id,
-    amount,
-    description: `Fund transfer to agent`,
-    status: 'completed',
+  // Atomic transfer via RPC
+  const { data, error } = await (admin as any).rpc('transfer_funds', {
+    p_from_wallet: userWallet.id,
+    p_to_wallet: agentWallet.id,
+    p_amount: amount,
+    p_description: `Fund transfer to agent`,
   })
 
-  return NextResponse.json({ success: true })
+  if (error) {
+    const msg = error.message || 'Transfer failed'
+    const status = msg.includes('Insufficient') ? 400 : 500
+    return NextResponse.json({ error: msg }, { status })
+  }
+
+  return NextResponse.json({ success: true, transaction_id: data })
 }

@@ -32,12 +32,18 @@ importers:
       '@tiptap/extension-collaboration-caret':
         specifier: ^3.19.0
         version: 3.19.0(@tiptap/core@3.19.0(@tiptap/pm@3.19.0))(@tiptap/pm@3.19.0)(@tiptap/y-tiptap@3.0.2(prosemirror-model@1.25.4)(prosemirror-state@1.4.4)(prosemirror-view@1.41.6)(y-protocols@1.0.7(yjs@13.6.29))(yjs@13.6.29))
+      '@tiptap/extension-mention':
+        specifier: ^3.19.0
+        version: 3.19.0(@tiptap/core@3.19.0(@tiptap/pm@3.19.0))(@tiptap/pm@3.19.0)(@tiptap/suggestion@3.19.0(@tiptap/core@3.19.0(@tiptap/pm@3.19.0))(@tiptap/pm@3.19.0))
       '@tiptap/react':
         specifier: ^3.19.0
         version: 3.19.0(@floating-ui/dom@1.7.5)(@tiptap/core@3.19.0(@tiptap/pm@3.19.0))(@tiptap/pm@3.19.0)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       '@tiptap/starter-kit':
         specifier: ^3.19.0
         version: 3.19.0
+      '@tiptap/suggestion':
+        specifier: ^3.19.0
+        version: 3.19.0(@tiptap/core@3.19.0(@tiptap/pm@3.19.0))(@tiptap/pm@3.19.0)
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -59,6 +65,9 @@ importers:
       react-dom:
         specifier: 19.1.0
         version: 19.1.0(react@19.1.0)
+      stripe:
+        specifier: ^20.3.1
+        version: 20.3.1(@types/node@20.19.33)
       tailwind-merge:
         specifier: ^3.4.1
         version: 3.4.1
@@ -1827,6 +1836,13 @@ packages:
       '@tiptap/core': ^3.19.0
       '@tiptap/pm': ^3.19.0
 
+  '@tiptap/extension-mention@3.19.0':
+    resolution: {integrity: sha512-iBWX6mUouvDe9F75C2fJnFzvBFYVF8fcOa7UvzqWHRSCt8WxqSIp6C1B9Y0npP4TbIZySHzPV4NQQJhtmWwKww==}
+    peerDependencies:
+      '@tiptap/core': ^3.19.0
+      '@tiptap/pm': ^3.19.0
+      '@tiptap/suggestion': ^3.19.0
+
   '@tiptap/extension-ordered-list@3.19.0':
     resolution: {integrity: sha512-cxGsINquwHYE1kmhAcLNLHAofmoDEG6jbesR5ybl7tU5JwtKVO7S/xZatll2DU1dsDAXWPWEeeMl4e/9svYjCg==}
     peerDependencies:
@@ -1873,6 +1889,12 @@ packages:
 
   '@tiptap/starter-kit@3.19.0':
     resolution: {integrity: sha512-dTCkHEz+Y8ADxX7h+xvl6caAj+3nII/wMB1rTQchSuNKqJTOrzyUsCWm094+IoZmLT738wANE0fRIgziNHs/ug==}
+
+  '@tiptap/suggestion@3.19.0':
+    resolution: {integrity: sha512-tUZwMRFqTVPIo566ZmHNRteyZxJy2EE4FA+S3IeIUOOvY6AW0h1imhbpBO7sXV8CeEQvpa+2DWwLvy7L3vmstA==}
+    peerDependencies:
+      '@tiptap/core': ^3.19.0
+      '@tiptap/pm': ^3.19.0
 
   '@tiptap/y-tiptap@3.0.2':
     resolution: {integrity: sha512-flMn/YW6zTbc6cvDaUPh/NfLRTXDIqgpBUkYzM74KA1snqQwhOMjnRcnpu4hDFrTnPO6QGzr99vRyXEA7M44WA==}
@@ -4057,6 +4079,15 @@ packages:
     resolution: {integrity: sha512-6fPc+R4ihwqP6N/aIv2f1gMH8lOVtWQHoqC4yK6oSDVVocumAsfCqjkXnqiYMhmMwS/mEHLp7Vehlt3ql6lEig==}
     engines: {node: '>=8'}
 
+  stripe@20.3.1:
+    resolution: {integrity: sha512-k990yOT5G5rhX3XluRPw5Y8RLdJDW4dzQ29wWT66piHrbnM2KyamJ1dKgPsw4HzGHRWjDiSSdcI2WdxQUPV3aQ==}
+    engines: {node: '>=16'}
+    peerDependencies:
+      '@types/node': '>=16'
+    peerDependenciesMeta:
+      '@types/node':
+        optional: true
+
   styled-jsx@5.1.6:
     resolution: {integrity: sha512-qSVyDTeMotdvQYoHWLNGwRFJHC+i+ZvdBRYosOFgC+Wg1vx4frN2/RG/NA7SYqqvKNLf39P2LSRA2pu6n0XYZA==}
     engines: {node: '>= 12.0.0'}
@@ -6070,6 +6101,12 @@ snapshots:
       '@tiptap/core': 3.19.0(@tiptap/pm@3.19.0)
       '@tiptap/pm': 3.19.0
 
+  '@tiptap/extension-mention@3.19.0(@tiptap/core@3.19.0(@tiptap/pm@3.19.0))(@tiptap/pm@3.19.0)(@tiptap/suggestion@3.19.0(@tiptap/core@3.19.0(@tiptap/pm@3.19.0))(@tiptap/pm@3.19.0))':
+    dependencies:
+      '@tiptap/core': 3.19.0(@tiptap/pm@3.19.0)
+      '@tiptap/pm': 3.19.0
+      '@tiptap/suggestion': 3.19.0(@tiptap/core@3.19.0(@tiptap/pm@3.19.0))(@tiptap/pm@3.19.0)
+
   '@tiptap/extension-ordered-list@3.19.0(@tiptap/extension-list@3.19.0(@tiptap/core@3.19.0(@tiptap/pm@3.19.0))(@tiptap/pm@3.19.0))':
     dependencies:
       '@tiptap/extension-list': 3.19.0(@tiptap/core@3.19.0(@tiptap/pm@3.19.0))(@tiptap/pm@3.19.0)
@@ -6158,6 +6195,11 @@ snapshots:
       '@tiptap/extension-text': 3.19.0(@tiptap/core@3.19.0(@tiptap/pm@3.19.0))
       '@tiptap/extension-underline': 3.19.0(@tiptap/core@3.19.0(@tiptap/pm@3.19.0))
       '@tiptap/extensions': 3.19.0(@tiptap/core@3.19.0(@tiptap/pm@3.19.0))(@tiptap/pm@3.19.0)
+      '@tiptap/pm': 3.19.0
+
+  '@tiptap/suggestion@3.19.0(@tiptap/core@3.19.0(@tiptap/pm@3.19.0))(@tiptap/pm@3.19.0)':
+    dependencies:
+      '@tiptap/core': 3.19.0(@tiptap/pm@3.19.0)
       '@tiptap/pm': 3.19.0
 
   '@tiptap/y-tiptap@3.0.2(prosemirror-model@1.25.4)(prosemirror-state@1.4.4)(prosemirror-view@1.41.6)(y-protocols@1.0.7(yjs@13.6.29))(yjs@13.6.29)':
@@ -8673,6 +8715,10 @@ snapshots:
   strip-final-newline@4.0.0: {}
 
   strip-json-comments@3.1.1: {}
+
+  stripe@20.3.1(@types/node@20.19.33):
+    optionalDependencies:
+      '@types/node': 20.19.33
 
   styled-jsx@5.1.6(@babel/core@7.29.0)(react@19.1.0):
     dependencies:

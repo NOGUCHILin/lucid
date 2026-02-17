@@ -9,6 +9,9 @@ import * as Y from 'yjs'
 import { useEffect, useMemo, useState } from 'react'
 import { useBehaviorTracker } from '@/hooks/useBehaviorTracker'
 import { ApprovalCard } from './extensions/approval-card'
+import { MentionExtension } from './extensions/mention'
+import { PresenceBar } from './PresenceBar'
+import { TypingIndicator } from './TypingIndicator'
 
 interface TipTapEditorProps {
   pageId: string
@@ -64,6 +67,7 @@ export function TipTapEditor({
         user: { name: userName, color: userColor },
       }),
       ApprovalCard,
+      MentionExtension,
     ],
     editorProps: {
       attributes: {
@@ -77,22 +81,77 @@ export function TipTapEditor({
 
   useBehaviorTracker({ editor, pageId, userId })
 
+  // Idle detection: 30s no activity → away
+  useEffect(() => {
+    if (!provider?.awareness) return
+    let idleTimer: ReturnType<typeof setTimeout>
+
+    const resetIdle = () => {
+      provider.awareness?.setLocalStateField('user', {
+        name: userName, color: userColor, role: 'human', status: 'online', isTyping: false,
+      })
+      clearTimeout(idleTimer)
+      idleTimer = setTimeout(() => {
+        provider.awareness?.setLocalStateField('user', {
+          name: userName, color: userColor, role: 'human', status: 'away', isTyping: false,
+        })
+      }, 30_000)
+    }
+
+    resetIdle()
+    const events = ['mousemove', 'keydown', 'click', 'scroll'] as const
+    events.forEach((e) => document.addEventListener(e, resetIdle))
+
+    return () => {
+      clearTimeout(idleTimer)
+      events.forEach((e) => document.removeEventListener(e, resetIdle))
+    }
+  }, [provider, userName, userColor])
+
+  // Typing indicator
+  useEffect(() => {
+    if (!editor || !provider?.awareness) return
+    let typingTimer: ReturnType<typeof setTimeout>
+
+    const onUpdate = () => {
+      provider.awareness?.setLocalStateField('user', {
+        name: userName, color: userColor, role: 'human', status: 'online', isTyping: true,
+      })
+      clearTimeout(typingTimer)
+      typingTimer = setTimeout(() => {
+        provider.awareness?.setLocalStateField('user', {
+          name: userName, color: userColor, role: 'human', status: 'online', isTyping: false,
+        })
+      }, 2_000)
+    }
+
+    editor.on('update', onUpdate)
+    return () => {
+      clearTimeout(typingTimer)
+      editor.off('update', onUpdate)
+    }
+  }, [editor, provider, userName, userColor])
+
   return (
     <div className="flex flex-col items-center gap-4">
-      {/* Status indicator */}
-      <div className="flex items-center gap-2 text-sm text-muted-foreground" aria-live="polite">
-        <div
-          className={`h-2 w-2 rounded-full ${
-            status === 'connected'
-              ? 'bg-green-500'
-              : status === 'connecting'
-                ? 'bg-yellow-500'
-                : 'bg-red-500'
-          }`}
-          aria-hidden="true"
-        />
-        <span>{status === 'connected' ? '接続中' : status === 'connecting' ? '接続中...' : '切断'}</span>
+      {/* Status + Presence */}
+      <div className="flex items-center gap-3 text-sm text-muted-foreground" aria-live="polite">
+        <div className="flex items-center gap-2">
+          <div
+            className={`h-2 w-2 rounded-full ${
+              status === 'connected'
+                ? 'bg-green-500'
+                : status === 'connecting'
+                  ? 'bg-yellow-500'
+                  : 'bg-red-500'
+            }`}
+            aria-hidden="true"
+          />
+          <span>{status === 'connected' ? '接続中' : status === 'connecting' ? '接続中...' : '切断'}</span>
+        </div>
+        <PresenceBar provider={provider} />
       </div>
+      <TypingIndicator provider={provider} />
 
       {/* A4 Page */}
       <div className="w-full max-w-[var(--page-width)] min-h-[var(--page-min-height)] bg-white shadow-lg border border-neutral-200 rounded-sm">
