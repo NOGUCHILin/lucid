@@ -1,3 +1,4 @@
+import 'dotenv/config'
 import { Server } from '@hocuspocus/server'
 import { createClient } from '@supabase/supabase-js'
 import * as Y from 'yjs'

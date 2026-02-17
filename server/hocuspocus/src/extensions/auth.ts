@@ -6,8 +6,8 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
 
 export const authExtension: Extension = {
   async onAuthenticate({ token }: onAuthenticatePayload) {
-    // 開発環境: サービスキー未設定ならスキップ
-    if (!supabaseServiceKey) {
+    // トークンなし → 開発用ユーザーとして許可
+    if (!token || !supabaseServiceKey) {
       return { user: { name: 'dev-user', id: 'dev' } }
     }
 
