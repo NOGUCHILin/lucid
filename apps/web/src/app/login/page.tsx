@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { createBrowserClient } from '@supabase/ssr'
+import { createBrowserClient } from '@lucid/database'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
@@ -12,10 +12,7 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+  const supabase = createBrowserClient()
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -51,6 +48,8 @@ export default function LoginPage() {
           <Input
             type="email"
             placeholder="メールアドレス"
+            aria-label="メールアドレス"
+            autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
@@ -58,13 +57,15 @@ export default function LoginPage() {
           <Input
             type="password"
             placeholder="パスワード"
+            aria-label="パスワード"
+            autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
             minLength={6}
           />
 
-          {error && <p className="text-sm text-red-500">{error}</p>}
+          {error && <p className="text-sm text-red-500" role="alert">{error}</p>}
 
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? '処理中...' : mode === 'login' ? 'ログイン' : '登録'}

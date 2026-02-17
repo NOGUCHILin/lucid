@@ -1,11 +1,16 @@
 'use client'
 
 import { use } from 'react'
+import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { TipTapEditor } from '@/components/editor/TipTapEditor'
 import { usePageThreshold } from '@/hooks/usePageThreshold'
+
+const TipTapEditor = dynamic(
+  () => import('@/components/editor/TipTapEditor').then((m) => m.TipTapEditor),
+  { ssr: false, loading: () => <div className="w-full max-w-[var(--page-width)] min-h-[var(--page-min-height)] mx-auto bg-white shadow-lg border border-neutral-200 rounded-sm animate-pulse" /> }
+)
 
 export default function EditorPage({
   params,
@@ -18,7 +23,7 @@ export default function EditorPage({
   return (
     <div className="min-h-screen bg-neutral-100 py-8">
       {/* Header */}
-      <div className="max-w-[794px] mx-auto mb-4 flex items-center justify-between">
+      <div className="max-w-[var(--page-width)] mx-auto mb-4 flex items-center justify-between">
         <Link href="/">
           <Button variant="ghost" size="sm">
             <ArrowLeft className="size-4" />
@@ -40,7 +45,7 @@ export default function EditorPage({
 
       {/* Next page trigger */}
       {!nextPageId && (
-        <div className="max-w-[794px] mx-auto mt-4 flex justify-end">
+        <div className="max-w-[var(--page-width)] mx-auto mt-4 flex justify-end">
           <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={createNextPage}>
             + 次のページを作成
           </Button>

@@ -62,7 +62,7 @@ export function TipTapEditor({
     ],
     editorProps: {
       attributes: {
-        class: 'prose prose-neutral max-w-none focus:outline-none min-h-[1123px] p-16',
+        class: 'prose prose-neutral max-w-none focus:outline-none min-h-[var(--page-min-height)] p-16',
       },
     },
     onUpdate({ editor: e }) {
@@ -73,7 +73,7 @@ export function TipTapEditor({
   return (
     <div className="flex flex-col items-center gap-4">
       {/* Status indicator */}
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+      <div className="flex items-center gap-2 text-sm text-muted-foreground" aria-live="polite">
         <div
           className={`h-2 w-2 rounded-full ${
             status === 'connected'
@@ -82,12 +82,13 @@ export function TipTapEditor({
                 ? 'bg-yellow-500'
                 : 'bg-red-500'
           }`}
+          aria-hidden="true"
         />
         <span>{status === 'connected' ? '接続中' : status === 'connecting' ? '接続中...' : '切断'}</span>
       </div>
 
       {/* A4 Page */}
-      <div className="w-[794px] min-h-[1123px] bg-white shadow-lg border border-neutral-200 rounded-sm">
+      <div className="w-full max-w-[var(--page-width)] min-h-[var(--page-min-height)] bg-white shadow-lg border border-neutral-200 rounded-sm">
         <EditorContent editor={editor} />
       </div>
     </div>

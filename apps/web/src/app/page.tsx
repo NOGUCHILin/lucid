@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -14,13 +15,18 @@ interface Page {
 }
 
 export default function PageList() {
+  const router = useRouter()
   const [pages, setPages] = useState<Page[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     fetch('/api/pages')
-      .then((res) => res.json())
-      .then((data) => setPages(data))
+      .then((res) => {
+        if (!res.ok) throw new Error(`${res.status}`)
+        return res.json()
+      })
+      .then((data: Page[]) => setPages(data))
+      .catch(() => setPages([]))
       .finally(() => setLoading(false))
   }, [])
 
@@ -30,8 +36,9 @@ export default function PageList() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ title: '無題のページ' }),
     })
-    const page = await res.json()
-    window.location.href = `/${page.id}`
+    if (!res.ok) return
+    const page: { id: string } = await res.json()
+    router.push(`/${page.id}`)
   }
 
   return (

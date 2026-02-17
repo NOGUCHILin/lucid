@@ -10,8 +10,8 @@
   },
   "dependencies": {
     "@hocuspocus/provider": "^3.4.4",
+    "@lucid/database": "workspace:*",
     "@supabase/ssr": "^0.8.0",
-    "@supabase/supabase-js": "^2.95.3",
     "@tiptap/core": "^3.19.0",
     "@tiptap/extension-collaboration": "^3.19.0",
     "@tiptap/extension-collaboration-caret": "^3.19.0",
@@ -20,7 +20,6 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.564.0",
-    "nanoid": "^5.1.6",
     "next": "15.5.12",
     "radix-ui": "^1.4.3",
     "react": "19.1.0",

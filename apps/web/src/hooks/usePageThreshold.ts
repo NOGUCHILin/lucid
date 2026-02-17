@@ -28,9 +28,10 @@ export function usePageThreshold(pageId: string) {
         prevPageId: pageId,
       }),
     })
-    const page = await res.json()
+    if (!res.ok) return null
+    const page: { id: string } = await res.json()
     setNextPageId(page.id)
-    return page.id as string
+    return page.id
   }, [pageId, nextPageId])
 
   // 既存の次ページを確認

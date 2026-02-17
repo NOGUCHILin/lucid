@@ -1,32 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
-
-async function getSupabase() {
-  const cookieStore = await cookies()
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll()
-        },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            )
-          } catch {}
-        },
-      },
-    }
-  )
-}
+import { createServerClient } from '@lucid/database'
 
 // GET /api/pages
 export async function GET() {
-  const supabase = await getSupabase()
+  const supabase = await createServerClient()
   const { data, error } = await supabase
     .from('pages')
     .select('id, title, created_at, updated_at')
@@ -40,7 +17,7 @@ export async function GET() {
 
 // POST /api/pages
 export async function POST(request: NextRequest) {
-  const supabase = await getSupabase()
+  const supabase = await createServerClient()
   const body = await request.json()
 
   const { data: { user } } = await supabase.auth.getUser()

@@ -27,8 +27,12 @@ const server = new Server({
       .single()
 
     if (data?.content_snapshot) {
-      const snapshot = Buffer.from(data.content_snapshot, 'base64')
-      Y.applyUpdate(document, new Uint8Array(snapshot))
+      try {
+        const snapshot = Buffer.from(data.content_snapshot, 'base64')
+        Y.applyUpdate(document, new Uint8Array(snapshot))
+      } catch (e) {
+        console.error(`[onLoadDocument] snapshot broken for ${documentName}, starting fresh`)
+      }
     }
   },
 
