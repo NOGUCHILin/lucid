@@ -1,0 +1,27 @@
+import type { Metadata } from "next";
+import { Geist } from "next/font/google";
+import "./globals.css";
+
+const geist = Geist({
+  variable: "--font-geist",
+  subsets: ["latin"],
+});
+
+export const metadata: Metadata = {
+  title: "Lucid",
+  description: "AIの中で暮らすOS",
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="ja">
+      <body className={`${geist.variable} font-sans antialiased bg-neutral-50`}>
+        {children}
+      </body>
+    </html>
+  );
+}
