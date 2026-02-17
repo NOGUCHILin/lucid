@@ -7,7 +7,7 @@
 create table public.pages (
   id uuid primary key default gen_random_uuid(),
   title text not null default '',
-  content_snapshot bytea,  -- Yjs binary snapshot
+  content_snapshot text,  -- Yjs state as base64
   owner_id uuid not null references auth.users(id) on delete cascade,
   prev_page_id uuid references public.pages(id),
   created_at timestamptz not null default now(),

@@ -7,10 +7,14 @@
     "start": "tsx src/index.ts"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^3.0.29",
+    "@hocuspocus/extension-database": "^3.4.4",
     "@hocuspocus/server": "^3.4.4",
     "@supabase/supabase-js": "^2.95.3",
+    "ai": "^6.0.86",
     "dotenv": "^17.3.1",
-    "yjs": "^13"
+    "yjs": "^13",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "tsx": "^4",

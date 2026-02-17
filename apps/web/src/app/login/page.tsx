@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { createBrowserClient } from '@lucid/database'
+import { createClient as createBrowserClient } from '@lucid/database/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 

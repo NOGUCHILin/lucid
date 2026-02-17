@@ -7,9 +7,12 @@ import CollaborationCaret from '@tiptap/extension-collaboration-caret'
 import { HocuspocusProvider } from '@hocuspocus/provider'
 import * as Y from 'yjs'
 import { useEffect, useMemo, useState } from 'react'
+import { useBehaviorTracker } from '@/hooks/useBehaviorTracker'
+import { ApprovalCard } from './extensions/approval-card'
 
 interface TipTapEditorProps {
   pageId: string
+  userId?: string
   userName?: string
   userColor?: string
   onTextUpdate?: (text: string) => void
@@ -17,6 +20,7 @@ interface TipTapEditorProps {
 
 export function TipTapEditor({
   pageId,
+  userId = 'anonymous',
   userName = 'Anonymous',
   userColor = '#3b82f6',
   onTextUpdate,
@@ -50,7 +54,7 @@ export function TipTapEditor({
     immediatelyRender: false,
     extensions: [
       StarterKit.configure({
-        undoRedo: false, // Collaboration handles undo/redo
+        undoRedo: false,
       }),
       Collaboration.configure({
         document: ydoc,
@@ -59,6 +63,7 @@ export function TipTapEditor({
         provider,
         user: { name: userName, color: userColor },
       }),
+      ApprovalCard,
     ],
     editorProps: {
       attributes: {
@@ -68,7 +73,9 @@ export function TipTapEditor({
     onUpdate({ editor: e }) {
       onTextUpdate?.(e.getText())
     },
-  })
+  }, [ydoc, provider])
+
+  useBehaviorTracker({ editor, pageId, userId })
 
   return (
     <div className="flex flex-col items-center gap-4">
