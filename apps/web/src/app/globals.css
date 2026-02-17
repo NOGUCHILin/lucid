@@ -26,3 +26,33 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans), sans-serif;
 }
+
+@media (max-width: 768px) {
+  :root {
+    --page-width: 100%;
+    --page-min-height: auto;
+  }
+}
+
+/* Code block highlight */
+.tiptap pre {
+  background: #1e1e1e;
+  color: #d4d4d4;
+  border-radius: 0.375rem;
+  padding: 1rem;
+  overflow-x: auto;
+}
+
+.tiptap pre code .hljs-keyword { color: #569cd6; }
+.tiptap pre code .hljs-string { color: #ce9178; }
+.tiptap pre code .hljs-comment { color: #6a9955; }
+.tiptap pre code .hljs-number { color: #b5cea8; }
+.tiptap pre code .hljs-function { color: #dcdcaa; }
+
+/* Image in editor */
+.tiptap img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.375rem;
+  margin: 0.5rem 0;
+}

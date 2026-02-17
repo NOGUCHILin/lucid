@@ -1,14 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@lucid/database'
 
-// GET /api/pages
-export async function GET() {
+// GET /api/pages?q=検索語&sort=updated_at&order=desc
+export async function GET(request: NextRequest) {
   const supabase = await createServerClient()
-  const { data, error } = await supabase
-    .from('pages')
-    .select('id, title, created_at, updated_at')
-    .order('updated_at', { ascending: false })
+  const { searchParams } = new URL(request.url)
+  const q = searchParams.get('q')
+  const sort = searchParams.get('sort') || 'updated_at'
+  const order = searchParams.get('order') || 'desc'
 
+  let query = supabase.from('pages').select('id, title, created_at, updated_at')
+  if (q) query = query.ilike('title', `%${q}%`)
+  query = query.order(sort, { ascending: order === 'asc' })
+
+  const { data, error } = await query
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }

@@ -3,12 +3,10 @@
 import { use, useEffect, useState } from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
-import { ArrowLeft, Bot } from 'lucide-react'
+import { Bot } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { usePageThreshold } from '@/hooks/usePageThreshold'
 import { AgentPanel } from '@/components/agent/AgentPanel'
-import { WalletWidget } from '@/components/wallet/WalletWidget'
-import { NotificationBell } from '@/components/notifications/NotificationBell'
 import { createClient } from '@lucid/database/client'
 
 const TipTapEditor = dynamic(
@@ -39,30 +37,17 @@ export default function EditorPage({
 
   return (
     <div className="min-h-screen bg-neutral-100 py-8">
-      {/* Header */}
-      <div className="max-w-[var(--page-width)] mx-auto mb-4 flex items-center justify-between">
-        <Link href="/">
-          <Button variant="ghost" size="sm">
-            <ArrowLeft className="size-4" />
-            戻る
-          </Button>
-        </Link>
-
-        <div className="flex items-center gap-2">
-          <WalletWidget />
-          <NotificationBell />
-          <Button variant="outline" size="sm" onClick={() => setPanelOpen(!panelOpen)}>
-            <Bot className="size-4" />
-            エージェント
-          </Button>
-          {nextPageId && (
-            <Link href={`/${nextPageId}`}>
-              <Button variant="outline" size="sm">
-                次のページ →
-              </Button>
-            </Link>
-          )}
-        </div>
+      {/* Toolbar */}
+      <div className="max-w-[var(--page-width)] mx-auto mb-4 flex items-center justify-end gap-2">
+        <Button variant="outline" size="sm" onClick={() => setPanelOpen(!panelOpen)}>
+          <Bot className="size-4" />
+          エージェント
+        </Button>
+        {nextPageId && (
+          <Link href={`/${nextPageId}`}>
+            <Button variant="outline" size="sm">次のページ →</Button>
+          </Link>
+        )}
       </div>
 
       <div className="flex gap-4 max-w-[calc(var(--page-width)+320px)] mx-auto">

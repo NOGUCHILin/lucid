@@ -95,10 +95,9 @@ async function tick(config: AgentConfig) {
     const intent = await inferIntent(config.pageId, events)
     console.log(`[agent-loop] page=${config.pageId} intent=${intent.intent} confidence=${intent.confidence}`)
 
-    // drafting/idle → 介入しない
-    if (intent.intent === 'drafting' || intent.intent === 'idle') return
+    // stuck/searching のみ介入
+    if (intent.intent !== 'stuck' && intent.intent !== 'searching') return
 
-    // stuck/searching → Claude APIで応答生成
     await act(config, intent, events)
   } catch (e) {
     console.error(`[agent-loop] tick error for page=${config.pageId}:`, e)

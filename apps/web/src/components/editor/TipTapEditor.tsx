@@ -10,6 +10,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { useBehaviorTracker } from '@/hooks/useBehaviorTracker'
 import { ApprovalCard } from './extensions/approval-card'
 import { MentionExtension } from './extensions/mention'
+import { ImageUpload } from './extensions/image-upload'
+import { CodeBlockHighlight } from './extensions/code-block-highlight'
 import { PresenceBar } from './PresenceBar'
 import { TypingIndicator } from './TypingIndicator'
 
@@ -58,6 +60,7 @@ export function TipTapEditor({
     extensions: [
       StarterKit.configure({
         undoRedo: false,
+        codeBlock: false,
       }),
       Collaboration.configure({
         document: ydoc,
@@ -68,6 +71,8 @@ export function TipTapEditor({
       }),
       ApprovalCard,
       MentionExtension,
+      ImageUpload,
+      CodeBlockHighlight,
     ],
     editorProps: {
       attributes: {
