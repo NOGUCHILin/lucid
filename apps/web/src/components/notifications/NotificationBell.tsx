@@ -32,7 +32,7 @@ export function NotificationBell() {
       </Button>
 
       {open && (
-        <div className="absolute right-0 top-full z-50 mt-2 w-80 rounded-lg border bg-white shadow-lg">
+        <div className="absolute right-0 top-full z-50 mt-2 w-[calc(100vw-2rem)] max-w-80 rounded-lg border bg-white shadow-lg">
           <NotificationList notifications={notifications} onMarkRead={markAsRead} />
         </div>
       )}

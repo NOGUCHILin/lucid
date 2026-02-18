@@ -106,7 +106,7 @@ export function TipTapEditor({
     extensions,
     editorProps: {
       attributes: {
-        class: 'prose prose-neutral max-w-none focus:outline-none min-h-[var(--page-min-height)] p-16',
+        class: 'prose prose-neutral max-w-none focus:outline-none min-h-[var(--page-min-height)] p-[var(--page-padding)]',
       },
     },
     onUpdate({ editor: e }) {
@@ -168,9 +168,9 @@ export function TipTapEditor({
   }, [editor, provider, userName, userColor])
 
   return (
-    <div className="flex flex-col items-center gap-4">
+    <div className="flex flex-col items-center gap-2 md:gap-4">
       {/* Status + Presence */}
-      <div className="flex items-center gap-3 text-sm text-muted-foreground" aria-live="polite">
+      <div className="flex flex-wrap items-center gap-2 md:gap-3 text-xs md:text-sm text-muted-foreground px-3 md:px-0" aria-live="polite">
         <div className="flex items-center gap-2">
           <div
             className={`h-2 w-2 rounded-full ${
@@ -189,7 +189,7 @@ export function TipTapEditor({
       <TypingIndicator provider={provider} />
 
       {/* A4 Page */}
-      <div className="w-full max-w-[var(--page-width)] min-h-[var(--page-min-height)] bg-white shadow-lg border border-neutral-200 rounded-sm">
+      <div className="w-full max-w-[var(--page-width)] min-h-[var(--page-min-height)] bg-white md:shadow-lg md:border md:border-neutral-200 md:rounded-sm">
         <EditorContent editor={editor} />
       </div>
     </div>
