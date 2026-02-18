@@ -152,7 +152,7 @@ export function TipTapEditor({
             }`}
             aria-hidden="true"
           />
-          <span>{status === 'connected' ? '接続中' : status === 'connecting' ? '接続中...' : '切断'}</span>
+          <span>{status === 'connected' ? '接続済み' : status === 'connecting' ? '接続中...' : '切断'}</span>
         </div>
         <PresenceBar provider={provider} />
       </div>
