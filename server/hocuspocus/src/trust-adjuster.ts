@@ -2,11 +2,7 @@
  * 信頼度自動調整
  * 承認/却下フィードバック等に基づき信頼度を動的に変化させる
  */
-import { createClient } from '@supabase/supabase-js'
-
-const supabaseUrl = process.env.SUPABASE_URL || 'http://127.0.0.1:54321'
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-const supabase = supabaseServiceKey ? createClient(supabaseUrl, supabaseServiceKey) : null
+import { supabase } from './supabase'
 
 export type TrustEventType =
   | 'approval_accepted'

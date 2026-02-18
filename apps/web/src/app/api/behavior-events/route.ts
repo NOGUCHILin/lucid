@@ -15,6 +15,9 @@ export async function POST(request: NextRequest) {
   if (!Array.isArray(events) || events.length === 0) {
     return NextResponse.json({ error: 'events must be a non-empty array' }, { status: 400 })
   }
+  if (events.length > 100) {
+    return NextResponse.json({ error: 'Maximum 100 events per batch' }, { status: 400 })
+  }
 
   const rows = events.map((e: { pageId: string; eventType: string; payload?: Record<string, unknown> }) => ({
     page_id: e.pageId,

@@ -1,27 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@lucid/database'
+import { createServerClient, createAdminClient } from '@lucid/database'
 
-// POST /api/transactions — create a transaction
+// POST /api/transactions — create a transaction (authenticated, owner-verified)
 export async function POST(request: NextRequest) {
   const supabase = await createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   const body = await request.json()
 
-  const { data, error } = await supabase
-    .from('transactions')
-    .insert({
-      type: body.type,
-      from_wallet_id: body.fromWalletId || null,
-      to_wallet_id: body.toWalletId || null,
-      amount: body.amount,
-      description: body.description || '',
-      metadata: body.metadata || {},
-      status: body.status || 'pending',
+  // For transfers, use the transfer_funds RPC (atomic + authorized)
+  if (body.type === 'transfer' && body.fromWalletId && body.toWalletId) {
+    const admin = createAdminClient()
+    const { data, error } = await (admin as any).rpc('transfer_funds', {
+      p_from_wallet: body.fromWalletId,
+      p_to_wallet: body.toWalletId,
+      p_amount: body.amount,
+      p_description: body.description || 'Transfer',
     })
-    .select()
-    .single()
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) {
+      const msg = error.message || 'Transfer failed'
+      const status = msg.includes('Insufficient') ? 400 : 500
+      return NextResponse.json({ error: msg }, { status })
+    }
+    return NextResponse.json({ transaction_id: data }, { status: 201 })
   }
-  return NextResponse.json(data, { status: 201 })
+
+  // Direct transaction creation is restricted — only record-keeping via RPC
+  return NextResponse.json(
+    { error: 'Direct transaction creation is not allowed. Use transfer or top-up endpoints.' },
+    { status: 403 }
+  )
 }

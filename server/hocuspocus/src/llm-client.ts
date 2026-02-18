@@ -2,7 +2,7 @@
  * Vercel AI SDK ベースの LLM クライアント
  * プロバイダー切り替えで任意のモデルに対応
  */
-import { generateText, generateObject, streamText, type CoreMessage } from 'ai'
+import { generateText, generateObject, streamText, type ModelMessage } from 'ai'
 import { createOpenAI } from '@ai-sdk/openai'
 import { z } from 'zod'
 
@@ -15,20 +15,20 @@ const provider = createOpenAI({
 const defaultModel = process.env.LLM_MODEL || 'llama3.2'
 
 export async function generate(
-  messages: CoreMessage[],
+  messages: ModelMessage[],
   model?: string
 ): Promise<string> {
   const { text } = await generateText({
     model: provider(model || defaultModel),
     messages,
     temperature: 0.7,
-    maxTokens: 500,
+    maxOutputTokens: 500,
   })
   return text
 }
 
 export async function generateStructured<T>(
-  messages: CoreMessage[],
+  messages: ModelMessage[],
   schema: z.ZodType<T>,
   model?: string
 ): Promise<T> {
@@ -42,14 +42,14 @@ export async function generateStructured<T>(
 }
 
 export function stream(
-  messages: CoreMessage[],
+  messages: ModelMessage[],
   model?: string
 ) {
   return streamText({
     model: provider(model || defaultModel),
     messages,
     temperature: 0.7,
-    maxTokens: 500,
+    maxOutputTokens: 500,
   })
 }
 

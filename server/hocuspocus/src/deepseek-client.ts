@@ -12,7 +12,7 @@ const JPY_PER_USD = 150
 const COST_PER_INPUT_TOKEN = (0.28 / 1_000_000) * JPY_PER_USD   // ¥0.000042
 const COST_PER_OUTPUT_TOKEN = (0.42 / 1_000_000) * JPY_PER_USD  // ¥0.000063
 
-export interface ClaudeResponse {
+export interface LLMResponse {
   text: string
   inputTokens: number
   outputTokens: number
@@ -32,7 +32,7 @@ export async function generateAgentResponse(params: {
   recentEvents: string
   trustScore: number
   agentName: string
-}): Promise<ClaudeResponse | null> {
+}): Promise<LLMResponse | null> {
   if (!DEEPSEEK_API_KEY) {
     console.warn('[deepseek-client] DEEPSEEK_API_KEY not set, skipping')
     return null

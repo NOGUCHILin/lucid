@@ -7,15 +7,20 @@ import { setHocuspocusInstance } from './agent-writer'
 import { setHocuspocusRef } from './agent-actions'
 import { setAgentLoopHocuspocus } from './agent-loop'
 
-const enableAuth = !!process.env.SUPABASE_SERVICE_ROLE_KEY
+// Auth is always required — refuse to start without service role key in production
+const isProduction = process.env.NODE_ENV === 'production'
+if (isProduction && !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  console.error('FATAL: SUPABASE_SERVICE_ROLE_KEY is required in production')
+  process.exit(1)
+}
 
 export const server = new Server({
   port: 1234,
   name: 'lucid-hocuspocus',
   extensions: [
+    authExtension,
     persistenceExtension,
     agentBridgeExtension,
-    ...(enableAuth ? [authExtension] : []),
   ],
 })
 

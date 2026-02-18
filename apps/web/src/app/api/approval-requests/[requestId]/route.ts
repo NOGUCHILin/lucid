@@ -15,6 +15,18 @@ export async function PATCH(
     return NextResponse.json({ error: 'status must be "approved" or "rejected"' }, { status: 400 })
   }
 
+  // まず対象リクエストを取得して期限チェック
+  const { data: existing } = await supabase
+    .from('approval_requests')
+    .select('expires_at')
+    .eq('id', requestId)
+    .eq('status', 'pending')
+    .single()
+
+  if (existing?.expires_at && new Date(existing.expires_at) < new Date()) {
+    return NextResponse.json({ error: 'This approval request has expired' }, { status: 410 })
+  }
+
   const { data, error } = await supabase
     .from('approval_requests')
     .update({

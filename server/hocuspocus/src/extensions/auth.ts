@@ -1,17 +1,16 @@
 import { Extension, onAuthenticatePayload } from '@hocuspocus/server'
 import { createClient } from '@supabase/supabase-js'
-
-const supabaseUrl = process.env.SUPABASE_URL || 'http://127.0.0.1:54321'
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+import { supabaseUrl, supabaseKey } from '../supabase'
 
 export const authExtension: Extension = {
   async onAuthenticate({ token }: onAuthenticatePayload) {
     // トークンなし → 開発用ユーザーとして許可
-    if (!token || !supabaseServiceKey) {
+    if (!token || !supabaseKey) {
       return { user: { name: 'dev-user', id: 'dev' } }
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+    // 認証時はトークン検証のため毎回新しいクライアントを使用
+    const supabase = createClient(supabaseUrl, supabaseKey)
     const {
       data: { user },
       error,

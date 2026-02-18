@@ -25,6 +25,11 @@ const MIN_INTERVAL_MS = 60_000 // 前回の推論から60秒以上
 
 const lastInference = new Map<string, number>()
 
+/** Clean up inference cache when agent loop stops */
+export function clearInferenceCache(pageId: string) {
+  lastInference.delete(pageId)
+}
+
 /**
  * ルールベース意図推論
  * LLM呼び出しの前段フィルタ

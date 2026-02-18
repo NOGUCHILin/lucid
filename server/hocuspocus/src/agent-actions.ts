@@ -2,13 +2,9 @@
  * エージェントアクション: 信頼度に基づく書き込み方式の判定
  */
 import * as Y from 'yjs'
-import { createClient } from '@supabase/supabase-js'
 import { writeToPage } from './agent-writer'
+import { supabase } from './supabase'
 import type { Hocuspocus } from '@hocuspocus/server'
-
-const supabaseUrl = process.env.SUPABASE_URL || 'http://127.0.0.1:54321'
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-const supabase = supabaseKey ? createClient(supabaseUrl, supabaseKey) : null
 
 let hocuspocusRef: Hocuspocus | null = null
 export function setHocuspocusRef(instance: Hocuspocus) {
@@ -55,8 +51,9 @@ export async function insertApprovalCard(params: {
   }
 
   // Y.Doc に承認カードノードを挿入
+  let connection = null
   try {
-    const connection = await hocuspocusRef.openDirectConnection(params.pageId, { agentWrite: true })
+    connection = await hocuspocusRef.openDirectConnection(params.pageId, { agentWrite: true })
     await connection.transact((doc: Y.Doc) => {
       const fragment = doc.getXmlFragment('default')
       const cardNode = new Y.XmlElement('approvalCard')
@@ -68,9 +65,10 @@ export async function insertApprovalCard(params: {
       cardNode.setAttribute('status', 'pending')
       fragment.insert(fragment.length, [cardNode])
     })
-    await connection.disconnect()
   } catch (e) {
     console.error('[agent-actions] Failed to insert approval card:', e)
+  } finally {
+    await connection?.disconnect()
   }
 
   return data.id

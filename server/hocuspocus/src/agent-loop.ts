@@ -2,16 +2,12 @@
  * AgentLoop: 環境型AIエージェントのメインループ
  * ページ上の行動イベントをポーリングし、意図推論→Claude API→書き込みを実行
  */
-import { createClient } from '@supabase/supabase-js'
-import { inferIntent, type IntentResult } from './intent-engine'
-import { generateAgentResponse } from './claude-client'
+import { inferIntent, clearInferenceCache, type IntentResult } from './intent-engine'
+import { generateAgentResponse } from './deepseek-client'
 import { readPage } from './agent-writer'
 import { resolveAction, agentDirectWrite, insertApprovalCard } from './agent-actions'
+import { supabase } from './supabase'
 import type { Hocuspocus } from '@hocuspocus/server'
-
-const supabaseUrl = process.env.SUPABASE_URL || 'http://127.0.0.1:54321'
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-const supabase = supabaseKey ? createClient(supabaseUrl, supabaseKey) : null
 
 const POLL_INTERVAL_MS = 10_000 // 10秒
 
@@ -21,7 +17,7 @@ export function setAgentLoopHocuspocus(instance: Hocuspocus) {
 }
 
 /** アクティブなループを管理 */
-const activeLoops = new Map<string, ReturnType<typeof setInterval>>()
+const activeLoops = new Map<string, ReturnType<typeof setTimeout>>()
 
 interface AgentConfig {
   pageId: string
@@ -38,7 +34,12 @@ function setAgentAwareness(pageId: string, agentName: string, status: 'online' |
     if (doc?.awareness) {
       // サーバー側のclientIDでエージェントプレゼンスを設定
       const awareness = doc.awareness
-      const agentClientId = 999_000 + Math.abs(pageId.charCodeAt(0)) // 一意のclientID
+      // Generate stable unique clientID from full pageId hash
+      let hash = 0
+      for (let i = 0; i < pageId.length; i++) {
+        hash = ((hash << 5) - hash + pageId.charCodeAt(i)) | 0
+      }
+      const agentClientId = 999_000 + Math.abs(hash % 100_000)
       awareness.setLocalStateField('user', {
         name: agentName,
         color: '#8b5cf6',
@@ -59,16 +60,24 @@ export function startAgentLoop(config: AgentConfig) {
   console.log(`[agent-loop] Starting for page=${config.pageId} agent=${config.agentName} trust=${config.trustScore}`)
 
   setAgentAwareness(config.pageId, config.agentName, 'online')
-  const timer = setInterval(() => tick(config), POLL_INTERVAL_MS)
-  activeLoops.set(config.pageId, timer)
+  // Use setTimeout chain instead of setInterval to prevent overlapping ticks
+  const scheduleNext = () => {
+    const timer = setTimeout(async () => {
+      await tick(config)
+      if (activeLoops.has(config.pageId)) scheduleNext()
+    }, POLL_INTERVAL_MS)
+    activeLoops.set(config.pageId, timer)
+  }
+  scheduleNext()
 }
 
 /** AgentLoopを停止 */
 export function stopAgentLoop(pageId: string) {
   const timer = activeLoops.get(pageId)
   if (timer) {
-    clearInterval(timer)
+    clearTimeout(timer)
     activeLoops.delete(pageId)
+    clearInferenceCache(pageId)
     setAgentAwareness(pageId, '', 'offline')
     console.log(`[agent-loop] Stopped for page=${pageId}`)
   }

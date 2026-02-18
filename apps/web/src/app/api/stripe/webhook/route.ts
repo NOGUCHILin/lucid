@@ -25,29 +25,26 @@ export async function POST(request: NextRequest) {
     if (userId && amount > 0) {
       const admin = createAdminClient()
 
-      // Get user wallet
-      const { data: wallet } = await (admin as any)
-        .from('wallets')
-        .select('id, balance')
-        .eq('entity_id', userId)
-        .eq('entity_type', 'user')
-        .single()
+      // Idempotency: check if this session was already processed
+      const { data: existing } = await (admin as any)
+        .from('transactions')
+        .select('id')
+        .eq('description', `Stripe checkout ${session.id}`)
+        .limit(1)
 
-      if (wallet) {
-        // Add balance
-        await (admin as any)
-          .from('wallets')
-          .update({ balance: wallet.balance + amount })
-          .eq('id', wallet.id)
+      if (existing && existing.length > 0) {
+        return NextResponse.json({ received: true })
+      }
 
-        // Record transaction
-        await (admin as any).from('transactions').insert({
-          type: 'deposit',
-          to_wallet_id: wallet.id,
-          amount,
-          description: `Stripe checkout ${session.id}`,
-          status: 'completed',
-        })
+      // Atomic top-up via wallet_top_up RPC (FOR UPDATE lock inside)
+      const { error: rpcError } = await (admin as any).rpc('wallet_top_up', {
+        p_entity_id: userId,
+        p_amount: amount,
+        p_description: `Stripe checkout ${session.id}`,
+      })
+
+      if (rpcError) {
+        console.error('[stripe-webhook] wallet_top_up failed:', rpcError.message)
       }
     }
   }

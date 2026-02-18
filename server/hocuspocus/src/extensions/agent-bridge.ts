@@ -1,20 +1,35 @@
 import type { Extension, onRequestPayload } from '@hocuspocus/server'
-import { createClient } from '@supabase/supabase-js'
 import { writeToPage, readPage } from '../agent-writer'
 import { startAgentLoop, stopAgentLoop } from '../agent-loop'
+import { supabase, supabaseKey } from '../supabase'
 import type { IncomingMessage, ServerResponse } from 'http'
 
-const supabaseUrl = process.env.SUPABASE_URL || 'http://127.0.0.1:54321'
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-const supabase = supabaseKey ? createClient(supabaseUrl, supabaseKey) : null
+// Internal API auth: requests must include this secret
+const INTERNAL_API_SECRET = process.env.INTERNAL_API_SECRET || supabaseKey
 
 /** ページに割り当てられたエージェント情報をキャッシュ */
 const pageAgents = new Map<string, { agentId: string; agentName: string; trustScore: number } | null>()
 
+function verifyInternalAuth(request: IncomingMessage): boolean {
+  const authHeader = request.headers['authorization'] || ''
+  return authHeader === `Bearer ${INTERNAL_API_SECRET}`
+}
+
+const MAX_BODY_SIZE = 1024 * 1024 // 1MB limit
+
 function parseBody(request: IncomingMessage): Promise<Record<string, unknown>> {
   return new Promise((resolve, reject) => {
     let body = ''
-    request.on('data', (chunk: Buffer) => { body += chunk.toString() })
+    let size = 0
+    request.on('data', (chunk: Buffer) => {
+      size += chunk.length
+      if (size > MAX_BODY_SIZE) {
+        request.destroy()
+        reject(new Error('Body too large'))
+        return
+      }
+      body += chunk.toString()
+    })
     request.on('end', () => {
       try { resolve(JSON.parse(body)) } catch { reject(new Error('Invalid JSON')) }
     })
@@ -62,11 +77,20 @@ export const agentBridgeExtension: Extension = {
     const url = new URL(request.url || '/', `http://${request.headers.host}`)
 
     if (url.pathname === '/api/agent-write' && request.method === 'POST') {
+      if (!verifyInternalAuth(request)) {
+        response.writeHead(401, { 'Content-Type': 'application/json' })
+        response.end(JSON.stringify({ error: 'Unauthorized' }))
+        throw null
+      }
       await handleAgentWrite(request, response)
-      // 空throwでデフォルトの"Welcome to Hocuspocus!"レスポンスを抑制
       throw null
     }
     if (url.pathname === '/api/agent-read' && request.method === 'POST') {
+      if (!verifyInternalAuth(request)) {
+        response.writeHead(401, { 'Content-Type': 'application/json' })
+        response.end(JSON.stringify({ error: 'Unauthorized' }))
+        throw null
+      }
       await handleAgentRead(request, response)
       throw null
     }
