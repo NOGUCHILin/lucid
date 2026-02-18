@@ -14,8 +14,10 @@ if (isProduction && !process.env.SUPABASE_SERVICE_ROLE_KEY) {
   process.exit(1)
 }
 
+const port = Number(process.env.PORT) || 1234
+
 export const server = new Server({
-  port: 1234,
+  port,
   name: 'lucid-hocuspocus',
   extensions: [
     authExtension,
@@ -29,5 +31,5 @@ server.listen().then(() => {
   setHocuspocusInstance(hocuspocus)
   setHocuspocusRef(hocuspocus)
   setAgentLoopHocuspocus(hocuspocus)
-  console.log(`Hocuspocus running on ws://127.0.0.1:1234`)
+  console.log(`Hocuspocus running on port ${port}`)
 })
