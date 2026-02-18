@@ -39,6 +39,7 @@ export async function POST(request: NextRequest) {
       title: body.title || '無題のページ',
       owner_id: user.id,
       prev_page_id: body.prevPageId || null,
+      conversation_id: body.conversationId || null,
     })
     .select()
     .single()

@@ -6,12 +6,13 @@ import Collaboration from '@tiptap/extension-collaboration'
 import CollaborationCaret from '@tiptap/extension-collaboration-caret'
 import { HocuspocusProvider } from '@hocuspocus/provider'
 import * as Y from 'yjs'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useBehaviorTracker } from '@/hooks/useBehaviorTracker'
 import { ApprovalCard } from './extensions/approval-card'
 import { MentionExtension } from './extensions/mention'
 import { ImageUpload } from './extensions/image-upload'
 import { CodeBlockHighlight } from './extensions/code-block-highlight'
+import { InlineSuggestion } from './extensions/inline-suggestion'
 import { PresenceBar } from './PresenceBar'
 import { TypingIndicator } from './TypingIndicator'
 
@@ -21,6 +22,8 @@ interface TipTapEditorProps {
   userName?: string
   userColor?: string
   onTextUpdate?: (text: string) => void
+  /** 環境エージェントのインライン補完を有効にする */
+  enableSuggestion?: boolean
 }
 
 export function TipTapEditor({
@@ -29,6 +32,7 @@ export function TipTapEditor({
   userName = 'Anonymous',
   userColor = '#3b82f6',
   onTextUpdate,
+  enableSuggestion = false,
 }: TipTapEditorProps) {
   const [status, setStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting')
 
@@ -55,25 +59,51 @@ export function TipTapEditor({
     }
   }, [provider, ydoc])
 
+  // refでenableSuggestionの最新値を保持（エディタ再作成不要）
+  const enableSuggestionRef = useRef(enableSuggestion)
+  useEffect(() => { enableSuggestionRef.current = enableSuggestion }, [enableSuggestion])
+
+  const fetchSuggestion = useCallback(async () => {
+    if (!enableSuggestionRef.current) return ''
+    try {
+      const res = await fetch('/api/suggest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pageId }),
+      })
+      if (!res.ok) return ''
+      const data = await res.json()
+      return data.suggestion || ''
+    } catch {
+      return ''
+    }
+  }, [pageId])
+
+  const extensions = useMemo(() => [
+    StarterKit.configure({
+      undoRedo: false,
+      codeBlock: false,
+    }),
+    Collaboration.configure({
+      document: ydoc,
+    }),
+    CollaborationCaret.configure({
+      provider,
+      user: { name: userName, color: userColor },
+    }),
+    ApprovalCard,
+    MentionExtension,
+    ImageUpload,
+    CodeBlockHighlight,
+    InlineSuggestion.configure({
+      fetchSuggestion,
+      delay: 2000,
+    }),
+  ], [ydoc, provider, userName, userColor, fetchSuggestion])
+
   const editor = useEditor({
     immediatelyRender: false,
-    extensions: [
-      StarterKit.configure({
-        undoRedo: false,
-        codeBlock: false,
-      }),
-      Collaboration.configure({
-        document: ydoc,
-      }),
-      CollaborationCaret.configure({
-        provider,
-        user: { name: userName, color: userColor },
-      }),
-      ApprovalCard,
-      MentionExtension,
-      ImageUpload,
-      CodeBlockHighlight,
-    ],
+    extensions,
     editorProps: {
       attributes: {
         class: 'prose prose-neutral max-w-none focus:outline-none min-h-[var(--page-min-height)] p-16',

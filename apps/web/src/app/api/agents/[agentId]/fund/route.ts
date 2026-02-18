@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient, createAdminClient } from '@lucid/database'
+import { createServerClient } from '@lucid/database'
+import { createAdminClient } from '@lucid/database/admin'
 
 // POST /api/agents/[agentId]/fund — transfer funds from user to agent (atomic RPC)
 export async function POST(
