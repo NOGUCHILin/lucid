@@ -1,9 +1,10 @@
 /**
  * AgentLoop: 環境型AIエージェントのメインループ
- * ページ上の行動イベントをポーリングし、意図推論→Claude API→書き込みを実行
+ * 通常エージェント: 行動イベントをポーリングし、意図推論→DeepSeek→書き込み
+ * ambient エージェント: 全会話コンテキストを集約してユーザーのクローンとして振る舞う
  */
 import { inferIntent, clearInferenceCache, type IntentResult } from './intent-engine'
-import { generateAgentResponse } from './deepseek-client'
+import { generateAgentResponse, generateAmbientResponse } from './deepseek-client'
 import { readPage } from './agent-writer'
 import { resolveAction, agentDirectWrite, insertApprovalCard } from './agent-actions'
 import { supabase } from './supabase'
@@ -24,6 +25,8 @@ interface AgentConfig {
   agentId: string
   agentName: string
   trustScore: number
+  isAmbient?: boolean
+  ownerId?: string
 }
 
 /** Hocuspocusドキュメントのawarenessにエージェント状態を設定 */
@@ -87,6 +90,12 @@ export function stopAgentLoop(pageId: string) {
 async function tick(config: AgentConfig) {
   if (!supabase) return
 
+  // ambient エージェントは専用tickへ
+  if (config.isAmbient) {
+    await ambientTick(config)
+    return
+  }
+
   try {
     // 1. 直近の行動イベントを取得
     const since = new Date(Date.now() - 30_000).toISOString() // 直近30秒
@@ -110,6 +119,99 @@ async function tick(config: AgentConfig) {
     await act(config, intent, events)
   } catch (e) {
     console.error(`[agent-loop] tick error for page=${config.pageId}:`, e)
+  }
+}
+
+// ============================================================
+// Ambient Agent: クロスコンテキスト集約ティック
+// ============================================================
+
+/** 最新の提案をキャッシュ（APIから取得用） */
+const latestSuggestions = new Map<string, { text: string; generatedAt: number }>()
+
+export function getLatestSuggestion(pageId: string): string | null {
+  const s = latestSuggestions.get(pageId)
+  if (!s) return null
+  // 30秒以内の提案のみ有効
+  if (Date.now() - s.generatedAt > 30_000) {
+    latestSuggestions.delete(pageId)
+    return null
+  }
+  return s.text
+}
+
+/** クロスコンテキスト要約を取得 */
+async function getCrossContextSummaries(userId: string): Promise<string> {
+  if (!supabase) return ''
+  const { data } = await supabase
+    .from('user_context_summaries')
+    .select('summary, conversation_id')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(10)
+
+  if (!data || data.length === 0) return ''
+  return data.map(d => d.summary).join('\n---\n')
+}
+
+/** ユーザーのプロフィール名を取得 */
+async function getUserDisplayName(userId: string): Promise<string> {
+  if (!supabase) return ''
+  const { data } = await supabase
+    .from('profiles')
+    .select('display_name')
+    .eq('id', userId)
+    .single()
+  return data?.display_name || ''
+}
+
+/** ambient エージェント専用tick */
+async function ambientTick(config: AgentConfig) {
+  if (!supabase || !config.ownerId) return
+
+  try {
+    // 1. ページ内容を取得
+    const pageContent = await readPage(config.pageId)
+    if (!pageContent || pageContent.trim().length < 5) return
+
+    // 2. クロスコンテキスト要約取得
+    const crossContext = await getCrossContextSummaries(config.ownerId)
+
+    // 3. ユーザー名取得
+    const userName = await getUserDisplayName(config.ownerId)
+
+    // 4. Awareness: 考え中
+    setAgentAwareness(config.pageId, config.agentName, 'thinking')
+
+    // 5. 環境エージェント専用レスポンス生成
+    const response = await generateAmbientResponse({
+      pageContent,
+      crossContextSummaries: crossContext,
+      userName: userName || 'ユーザー',
+      agentName: config.agentName,
+    })
+
+    if (response?.text) {
+      // 提案をキャッシュ（suggest APIから取得される）
+      latestSuggestions.set(config.pageId, {
+        text: response.text,
+        generatedAt: Date.now(),
+      })
+      console.log(`[agent-loop] Ambient suggestion cached for page=${config.pageId}: "${response.text.substring(0, 50)}..."`)
+
+      // コスト追跡
+      if (response.costJpy > 0) {
+        await supabase.rpc('agent_spend', {
+          p_agent_id: config.agentId,
+          p_amount: response.costJpy,
+          p_description: `Ambient suggestion, tokens: ${response.inputTokens}+${response.outputTokens}`,
+        })
+      }
+    }
+
+    setAgentAwareness(config.pageId, config.agentName, 'online')
+  } catch (e) {
+    console.error(`[agent-loop] ambient tick error for page=${config.pageId}:`, e)
   }
 }
 

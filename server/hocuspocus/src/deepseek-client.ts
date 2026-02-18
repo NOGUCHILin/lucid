@@ -95,3 +95,116 @@ ${params.recentEvents}
     return null
   }
 }
+
+/**
+ * 環境型エージェント専用: ユーザーのクローンとして次の文章を予測
+ */
+export async function generateAmbientResponse(params: {
+  pageContent: string
+  crossContextSummaries: string
+  userName: string
+  agentName: string
+}): Promise<LLMResponse | null> {
+  if (!DEEPSEEK_API_KEY) {
+    console.warn('[deepseek-client] DEEPSEEK_API_KEY not set, skipping')
+    return null
+  }
+
+  const systemPrompt = `あなたは「${params.userName}」の環境型AIアシスタントです。
+${params.userName}の全会話の文脈を把握しており、${params.userName}のように考え、提案します。
+
+## あなたの役割
+- ユーザーが書きそうな次の文章を予測して提案する
+- 他の会話で得た情報を統合して助言する
+- ユーザーの文体・口調を模倣する
+
+## ルール
+- 提案は1文のみ（短く自然に）
+- ユーザーの文脈に合った内容だけを提案
+- 説明や前置きは不要。提案文のみ出力`
+
+  const userMessage = `${params.crossContextSummaries ? `【他の会話の文脈】\n${params.crossContextSummaries}\n\n` : ''}【現在のテキスト】
+${params.pageContent.substring(0, 2000)}
+
+上記テキストの続きとして${params.userName}が書きそうな次の1文を提案してください。提案文のみ出力。`
+
+  try {
+    const response = await fetch(`${DEEPSEEK_BASE_URL}/v1/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        max_tokens: 150,
+        temperature: 0.7,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userMessage },
+        ],
+      }),
+    })
+
+    if (!response.ok) {
+      console.error(`[deepseek-client] Ambient API error: ${response.status}`)
+      return null
+    }
+
+    const data = await response.json()
+    const text = data.choices?.[0]?.message?.content || ''
+    const inputTokens = data.usage?.prompt_tokens || 0
+    const outputTokens = data.usage?.completion_tokens || 0
+
+    return {
+      text: text.trim(),
+      inputTokens,
+      outputTokens,
+      costJpy: calculateCost(inputTokens, outputTokens),
+    }
+  } catch (e) {
+    console.error('[deepseek-client] Ambient API error:', e)
+    return null
+  }
+}
+
+/**
+ * コンテキスト要約生成（低コスト設定）
+ */
+export async function generateContextSummary(text: string): Promise<LLMResponse | null> {
+  if (!DEEPSEEK_API_KEY) return null
+
+  try {
+    const response = await fetch(`${DEEPSEEK_BASE_URL}/v1/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        max_tokens: 200,
+        temperature: 0.3,
+        messages: [
+          { role: 'system', content: '会話テキストを100-200字で要約してください。要約のみ出力。' },
+          { role: 'user', content: text.substring(0, 3000) },
+        ],
+      }),
+    })
+
+    if (!response.ok) return null
+    const data = await response.json()
+    const summary = data.choices?.[0]?.message?.content || ''
+    const inputTokens = data.usage?.prompt_tokens || 0
+    const outputTokens = data.usage?.completion_tokens || 0
+
+    return {
+      text: summary.trim(),
+      inputTokens,
+      outputTokens,
+      costJpy: calculateCost(inputTokens, outputTokens),
+    }
+  } catch {
+    return null
+  }
+}

@@ -6,6 +6,7 @@ import { agentBridgeExtension } from './extensions/agent-bridge'
 import { setHocuspocusInstance } from './agent-writer'
 import { setHocuspocusRef } from './agent-actions'
 import { setAgentLoopHocuspocus } from './agent-loop'
+import { startContextSummarizer } from './context-summarizer'
 
 // Auth is always required — refuse to start without service role key in production
 const isProduction = process.env.NODE_ENV === 'production'
@@ -31,5 +32,6 @@ server.listen().then(() => {
   setHocuspocusInstance(hocuspocus)
   setHocuspocusRef(hocuspocus)
   setAgentLoopHocuspocus(hocuspocus)
+  startContextSummarizer()
   console.log(`Hocuspocus running on port ${port}`)
 })

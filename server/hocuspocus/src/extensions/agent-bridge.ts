@@ -1,6 +1,6 @@
 import type { Extension, onRequestPayload } from '@hocuspocus/server'
 import { writeToPage, readPage } from '../agent-writer'
-import { startAgentLoop, stopAgentLoop } from '../agent-loop'
+import { startAgentLoop, stopAgentLoop, getLatestSuggestion } from '../agent-loop'
 import { supabase, supabaseKey } from '../supabase'
 import type { IncomingMessage, ServerResponse } from 'http'
 
@@ -8,7 +8,7 @@ import type { IncomingMessage, ServerResponse } from 'http'
 const INTERNAL_API_SECRET = process.env.INTERNAL_API_SECRET || supabaseKey
 
 /** ページに割り当てられたエージェント情報をキャッシュ */
-const pageAgents = new Map<string, { agentId: string; agentName: string; trustScore: number } | null>()
+const pageAgents = new Map<string, { agentId: string; agentName: string; trustScore: number; isAmbient?: boolean; ownerId?: string } | null>()
 
 function verifyInternalAuth(request: IncomingMessage): boolean {
   const authHeader = request.headers['authorization'] || ''
@@ -42,16 +42,19 @@ export const agentBridgeExtension: Extension = {
     if (!supabase) return
     const { data } = await supabase
       .from('pages')
-      .select('agent_id, agents(name, trust_score)')
+      .select('agent_id, owner_id, agents(name, trust_score, config)')
       .eq('id', documentName)
       .single()
 
     if (data?.agent_id) {
-      const agent = data.agents as unknown as { trust_score: number; name: string } | null
+      const agent = data.agents as unknown as { trust_score: number; name: string; config: Record<string, unknown> } | null
+      const isAmbient = agent?.config?.type === 'ambient'
       const info = {
         agentId: data.agent_id,
         agentName: agent?.name ?? 'Agent',
         trustScore: agent?.trust_score ?? 0,
+        isAmbient,
+        ownerId: data.owner_id as string | undefined,
       }
       pageAgents.set(documentName, info)
 
@@ -61,6 +64,8 @@ export const agentBridgeExtension: Extension = {
         agentId: info.agentId,
         agentName: info.agentName,
         trustScore: info.trustScore,
+        isAmbient,
+        ownerId: info.ownerId,
       })
     } else {
       pageAgents.set(documentName, null)
@@ -75,6 +80,17 @@ export const agentBridgeExtension: Extension = {
   async onRequest(data: onRequestPayload) {
     const { request, response } = data
     const url = new URL(request.url || '/', `http://${request.headers.host}`)
+
+    // CORS preflight
+    if (request.method === 'OPTIONS') {
+      response.writeHead(204, {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      })
+      response.end()
+      throw null
+    }
 
     if (url.pathname === '/api/agent-write' && request.method === 'POST') {
       if (!verifyInternalAuth(request)) {
@@ -92,6 +108,11 @@ export const agentBridgeExtension: Extension = {
         throw null
       }
       await handleAgentRead(request, response)
+      throw null
+    }
+    // 提案取得API（フロントエンドから呼ばれる）
+    if (url.pathname === '/api/suggest' && request.method === 'POST') {
+      await handleSuggest(request, response)
       throw null
     }
   },
@@ -131,6 +152,29 @@ async function handleAgentRead(request: IncomingMessage, response: ServerRespons
     const text = await readPage(pageId)
     response.writeHead(200, { 'Content-Type': 'application/json' })
     response.end(JSON.stringify({ text }))
+  } catch (e) {
+    response.writeHead(500, { 'Content-Type': 'application/json' })
+    response.end(JSON.stringify({ error: String(e) }))
+  }
+}
+
+async function handleSuggest(request: IncomingMessage, response: ServerResponse) {
+  try {
+    const body = await parseBody(request)
+    const { pageId } = body as { pageId?: string }
+
+    if (!pageId) {
+      response.writeHead(400, { 'Content-Type': 'application/json' })
+      response.end(JSON.stringify({ error: 'pageId is required' }))
+      return
+    }
+
+    const suggestion = getLatestSuggestion(pageId)
+    response.writeHead(200, {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+    })
+    response.end(JSON.stringify({ suggestion: suggestion || '' }))
   } catch (e) {
     response.writeHead(500, { 'Content-Type': 'application/json' })
     response.end(JSON.stringify({ error: String(e) }))

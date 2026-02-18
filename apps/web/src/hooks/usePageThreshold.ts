@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 
 const CHAR_THRESHOLD = 2000
 
-export function usePageThreshold(pageId: string) {
+export function usePageThreshold(pageId: string, conversationId?: string) {
   const [charCount, setCharCount] = useState(0)
   const [nextPageId, setNextPageId] = useState<string | null>(null)
   const [thresholdReached, setThresholdReached] = useState(false)
@@ -24,15 +24,16 @@ export function usePageThreshold(pageId: string) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        title: '無題のページ',
+        title: '',
         prevPageId: pageId,
+        ...(conversationId ? { conversationId } : {}),
       }),
     })
     if (!res.ok) return null
     const page: { id: string } = await res.json()
     setNextPageId(page.id)
     return page.id
-  }, [pageId, nextPageId])
+  }, [pageId, conversationId, nextPageId])
 
   // 既存の次ページを確認
   useEffect(() => {
