@@ -9,7 +9,7 @@ const geist = Geist({
 });
 
 export const metadata: Metadata = {
-  title: "Lucid",
+  title: "Lucid — AIの中で暮らすOS",
   description: "AIの中で暮らすOS",
 };
 
