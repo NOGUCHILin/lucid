@@ -16,9 +16,10 @@ import { useFriends } from '@/hooks/useFriends'
 interface SidebarProps {
   collapsed: boolean
   onToggle: () => void
+  onNavigate?: () => void
 }
 
-export function Sidebar({ collapsed, onToggle }: SidebarProps) {
+export function Sidebar({ collapsed, onToggle, onNavigate }: SidebarProps) {
   const pathname = usePathname()
   const { conversations, query, search } = useConversations()
   const { pendingCount } = useFriends()
@@ -83,7 +84,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
               ピン留め
             </div>
             {pinned.map(conv => (
-              <ConversationItem key={conv.id} conversation={conv} isActive={activeConvId === conv.id} />
+              <ConversationItem key={conv.id} conversation={conv} isActive={activeConvId === conv.id} onClick={onNavigate} />
             ))}
           </>
         )}
@@ -97,7 +98,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
               </div>
             )}
             {recent.map(conv => (
-              <ConversationItem key={conv.id} conversation={conv} isActive={activeConvId === conv.id} />
+              <ConversationItem key={conv.id} conversation={conv} isActive={activeConvId === conv.id} onClick={onNavigate} />
             ))}
           </>
         )}

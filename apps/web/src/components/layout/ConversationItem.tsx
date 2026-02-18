@@ -19,14 +19,15 @@ function timeAgo(dateStr: string): string {
 interface Props {
   conversation: ConversationItemType
   isActive: boolean
+  onClick?: () => void
 }
 
-export function ConversationItem({ conversation, isActive }: Props) {
+export function ConversationItem({ conversation, isActive, onClick }: Props) {
   const { id, type, name, pinned, lastActivity, latestPageTitle } = conversation
 
   return (
-    <Link href={`/c/${id}`}>
-      <div className={`flex items-center gap-2.5 px-2 py-2 rounded-md text-sm transition-colors ${
+    <Link href={`/c/${id}`} onClick={onClick}>
+      <div className={`flex items-center gap-2.5 px-2 py-2.5 rounded-md text-sm transition-colors ${
         isActive ? 'bg-neutral-100 font-medium' : 'hover:bg-neutral-50 text-muted-foreground'
       }`}>
         {/* Avatar */}

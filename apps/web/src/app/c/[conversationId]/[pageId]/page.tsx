@@ -6,13 +6,15 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Bot, ChevronLeft, ChevronRight, List, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer'
 import { usePageThreshold } from '@/hooks/usePageThreshold'
+import { useIsMobile } from '@/hooks/useIsMobile'
 import { AgentPanel } from '@/components/agent/AgentPanel'
 import { createClient } from '@lucid/database/client'
 
 const TipTapEditor = dynamic(
   () => import('@/components/editor/TipTapEditor').then((m) => m.TipTapEditor),
-  { ssr: false, loading: () => <div className="w-full max-w-[var(--page-width)] min-h-[var(--page-min-height)] mx-auto bg-white shadow-lg border border-neutral-200 rounded-sm animate-pulse" /> }
+  { ssr: false, loading: () => <div className="w-full max-w-[var(--page-width)] min-h-[var(--page-min-height)] mx-auto bg-white md:shadow-lg md:border md:border-neutral-200 md:rounded-sm animate-pulse" /> }
 )
 
 interface PageInfo {
@@ -29,6 +31,7 @@ export default function ConversationPageView({
 }) {
   const { conversationId, pageId } = use(params)
   const router = useRouter()
+  const isMobile = useIsMobile()
   const { nextPageId, onUpdate, createNextPage } = usePageThreshold(pageId, conversationId)
   const [userId, setUserId] = useState<string>('anonymous')
   const [agentId, setAgentId] = useState<string | null>(null)
@@ -56,7 +59,6 @@ export default function ConversationPageView({
       .then(setPages)
       .catch(() => {})
 
-    // 会話名を取得（conversations APIから）
     fetch('/api/conversations')
       .then(res => res.ok ? res.json() : [])
       .then((convs: { id: string; name: string; type: 'human' | 'agent'; agentId: string | null }[]) => {
@@ -70,12 +72,10 @@ export default function ConversationPageView({
       .catch(() => {})
   }, [conversationId])
 
-  // 前後ページのID計算
   const currentIdx = pages.findIndex(p => p.id === pageId)
   const prevPageId = currentIdx > 0 ? pages[currentIdx - 1].id : null
   const nextPage = currentIdx >= 0 && currentIdx < pages.length - 1 ? pages[currentIdx + 1].id : nextPageId
 
-  // 次のページを作成して遷移
   async function handleCreateNext() {
     const newId = await createNextPage()
     if (newId) router.push(`/c/${conversationId}/${newId}`)
@@ -85,17 +85,17 @@ export default function ConversationPageView({
   const totalPages = pages.length
 
   return (
-    <div className="min-h-screen bg-neutral-100 py-4">
+    <div className="min-h-screen bg-neutral-100 py-2 md:py-4">
       {/* Conversation Header */}
-      <div className="max-w-[var(--page-width)] mx-auto mb-3 flex items-center justify-between">
+      <div className="max-w-[var(--page-width)] mx-auto mb-2 md:mb-3 px-3 md:px-0 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className={`size-7 rounded-full flex items-center justify-center ${
             convType === 'agent' ? 'bg-violet-100 text-violet-600' : 'bg-blue-100 text-blue-600'
           }`}>
             {convType === 'agent' ? <Bot className="size-3.5" /> : <User className="size-3.5" />}
           </div>
-          <span className="font-medium text-sm">{convName || '自分'}</span>
-          <span className="text-xs text-muted-foreground">
+          <span className="font-medium text-sm truncate">{convName || '自分'}</span>
+          <span className="text-xs text-muted-foreground shrink-0">
             {pageNumber} / {totalPages} ページ
           </span>
         </div>
@@ -103,7 +103,7 @@ export default function ConversationPageView({
         <div className="flex items-center gap-1">
           {/* Page list toggle */}
           <div className="relative">
-            <Button variant="ghost" size="sm" onClick={() => setPageListOpen(!pageListOpen)}>
+            <Button variant="ghost" size="icon" className="size-9" onClick={() => setPageListOpen(!pageListOpen)}>
               <List className="size-4" />
             </Button>
             {pageListOpen && (
@@ -114,7 +114,7 @@ export default function ConversationPageView({
                     href={`/c/${conversationId}/${p.id}`}
                     onClick={() => setPageListOpen(false)}
                   >
-                    <div className={`px-3 py-1.5 text-sm hover:bg-neutral-50 ${p.id === pageId ? 'bg-neutral-100 font-medium' : 'text-muted-foreground'}`}>
+                    <div className={`px-3 py-2 text-sm hover:bg-neutral-50 ${p.id === pageId ? 'bg-neutral-100 font-medium' : 'text-muted-foreground'}`}>
                       {p.title || `ページ ${i + 1}`}
                     </div>
                   </Link>
@@ -124,23 +124,23 @@ export default function ConversationPageView({
           </div>
 
           {convType === 'agent' && (
-            <Button variant="outline" size="sm" onClick={() => setPanelOpen(!panelOpen)}>
+            <Button variant="outline" size="icon" className="size-9" onClick={() => setPanelOpen(!panelOpen)}>
               <Bot className="size-4" />
             </Button>
           )}
         </div>
       </div>
 
-      <div className="flex gap-4 max-w-[calc(var(--page-width)+320px)] mx-auto">
+      <div className="flex gap-0 md:gap-4 max-w-full md:max-w-[calc(var(--page-width)+320px)] mx-auto">
         {/* Editor */}
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <TipTapEditor pageId={pageId} userId={userId} onTextUpdate={onUpdate} enableSuggestion={convType === 'agent'} />
 
           {/* Page Navigation */}
-          <div className="max-w-[var(--page-width)] mx-auto mt-3 flex items-center justify-between">
+          <div className="max-w-[var(--page-width)] mx-auto mt-2 md:mt-3 px-3 md:px-0 flex items-center justify-between">
             {prevPageId ? (
               <Link href={`/c/${conversationId}/${prevPageId}`}>
-                <Button variant="ghost" size="sm" className="text-muted-foreground">
+                <Button variant="ghost" size="sm" className="text-muted-foreground min-h-[44px]">
                   <ChevronLeft className="size-4" />
                   前のページ
                 </Button>
@@ -149,26 +149,40 @@ export default function ConversationPageView({
 
             {nextPage ? (
               <Link href={`/c/${conversationId}/${nextPage}`}>
-                <Button variant="ghost" size="sm" className="text-muted-foreground">
+                <Button variant="ghost" size="sm" className="text-muted-foreground min-h-[44px]">
                   次のページ
                   <ChevronRight className="size-4" />
                 </Button>
               </Link>
             ) : (
-              <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={handleCreateNext}>
+              <Button variant="ghost" size="sm" className="text-muted-foreground min-h-[44px]" onClick={handleCreateNext}>
                 + 次のページを作成
               </Button>
             )}
           </div>
         </div>
 
-        {/* Agent Panel */}
-        {panelOpen && (
+        {/* Agent Panel — Desktop: sidebar, Mobile: Drawer */}
+        {!isMobile && panelOpen && (
           <aside className="w-72 shrink-0 rounded-lg border bg-white shadow-sm">
             <AgentPanel agentId={agentId} />
           </aside>
         )}
       </div>
+
+      {/* Agent Panel — Mobile Drawer */}
+      {isMobile && (
+        <Drawer open={panelOpen} onOpenChange={setPanelOpen}>
+          <DrawerContent className="max-h-[85vh]">
+            <DrawerHeader>
+              <DrawerTitle>エージェント</DrawerTitle>
+            </DrawerHeader>
+            <div className="overflow-y-auto px-4 pb-4">
+              <AgentPanel agentId={agentId} />
+            </div>
+          </DrawerContent>
+        </Drawer>
+      )}
     </div>
   )
 }
