@@ -1,0 +1,5 @@
+[build]
+buildCommand = "pnpm install --frozen-lockfile"
+
+[deploy]
+startCommand = "pnpm --filter @lucid/hocuspocus start"
