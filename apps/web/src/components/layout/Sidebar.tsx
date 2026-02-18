@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Plus, Search, PanelLeftClose, PanelLeft, FileText } from 'lucide-react'
+import { Plus, Search, PanelLeftClose, PanelLeft, FileText, UserPlus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { WalletWidget } from '@/components/wallet/WalletWidget'
@@ -112,10 +112,20 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
         })}
       </div>
 
-      {/* Bottom: Wallet + Notifications */}
-      <div className="border-t px-3 py-2 flex items-center gap-2">
-        <WalletWidget />
-        <NotificationBell />
+      {/* Bottom: Invite + Wallet + Notifications */}
+      <div className="border-t px-3 py-2 space-y-1">
+        <Link href="/invitations">
+          <div className={`flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors ${
+            pathname === '/invitations' ? 'bg-neutral-100 font-medium' : 'hover:bg-neutral-50 text-muted-foreground'
+          }`}>
+            <UserPlus className="size-3.5 shrink-0" />
+            <span>招待管理</span>
+          </div>
+        </Link>
+        <div className="flex items-center gap-2">
+          <WalletWidget />
+          <NotificationBell />
+        </div>
       </div>
     </div>
   )

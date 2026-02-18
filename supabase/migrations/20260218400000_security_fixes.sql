@@ -61,6 +61,7 @@ create policy "Owners can delete own pages"
 -- adjust_trust: Add owner authorization check
 -- Only page owner can adjust their agent's trust score
 -- ============================================================
+drop function if exists public.adjust_trust(uuid, text, integer, text);
 create or replace function public.adjust_trust(
   p_agent_id uuid,
   p_event_type text,
