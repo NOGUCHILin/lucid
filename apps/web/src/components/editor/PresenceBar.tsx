@@ -71,10 +71,10 @@ export function PresenceBar({ provider }: PresenceBarProps) {
             }`}
           />
           {u.role === 'agent' && u.status === 'thinking' && (
-            <span className="text-[10px] text-purple-500 animate-pulse">考え中</span>
+            <span className="text-xs text-purple-500 animate-pulse">考え中</span>
           )}
           {u.role === 'agent' && u.trustScore != null && u.status !== 'thinking' && (
-            <span className="text-[10px] text-muted-foreground">{u.trustScore}</span>
+            <span className="text-xs text-muted-foreground">{u.trustScore}</span>
           )}
         </div>
       ))}

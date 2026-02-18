@@ -47,7 +47,7 @@ export function NotificationList({ notifications, onMarkRead }: NotificationList
           onClick={() => !n.read && onMarkRead([n.id])}
         >
           <div className="flex items-center gap-2">
-            <span className="rounded bg-neutral-100 px-1.5 py-0.5 text-[10px] text-muted-foreground">
+            <span className="rounded bg-neutral-100 px-1.5 py-0.5 text-xs text-muted-foreground">
               {TYPE_LABELS[n.type] || n.type}
             </span>
             <span className="text-xs text-muted-foreground">
