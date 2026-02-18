@@ -85,9 +85,9 @@ export default function ConversationPageView({
   const totalPages = pages.length
 
   return (
-    <div className="min-h-screen bg-neutral-100 py-2 md:py-4">
+    <div className="min-h-screen bg-white md:bg-neutral-100 py-0 md:py-4">
       {/* Conversation Header */}
-      <div className="max-w-[var(--page-width)] mx-auto mb-2 md:mb-3 px-3 md:px-0 flex items-center justify-between">
+      <div className="max-w-[var(--page-width)] mx-auto mb-0 md:mb-3 px-3 md:px-0 py-2 md:py-0 border-b md:border-0 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className={`size-7 rounded-full flex items-center justify-center ${
             convType === 'agent' ? 'bg-violet-100 text-violet-600' : 'bg-blue-100 text-blue-600'
@@ -136,26 +136,25 @@ export default function ConversationPageView({
         <div className="flex-1 min-w-0">
           <TipTapEditor pageId={pageId} userId={userId} onTextUpdate={onUpdate} enableSuggestion={convType === 'agent'} />
 
-          {/* Page Navigation */}
-          <div className="max-w-[var(--page-width)] mx-auto mt-2 md:mt-3 px-3 md:px-0 flex items-center justify-between">
+          {/* Page Navigation — デスクトップ */}
+          <div className="hidden md:flex max-w-[var(--page-width)] mx-auto mt-3 items-center justify-between">
             {prevPageId ? (
               <Link href={`/c/${conversationId}/${prevPageId}`}>
-                <Button variant="ghost" size="sm" className="text-muted-foreground min-h-[44px]">
+                <Button variant="ghost" size="sm" className="text-muted-foreground">
                   <ChevronLeft className="size-4" />
                   前のページ
                 </Button>
               </Link>
             ) : <div />}
-
             {nextPage ? (
               <Link href={`/c/${conversationId}/${nextPage}`}>
-                <Button variant="ghost" size="sm" className="text-muted-foreground min-h-[44px]">
+                <Button variant="ghost" size="sm" className="text-muted-foreground">
                   次のページ
                   <ChevronRight className="size-4" />
                 </Button>
               </Link>
             ) : (
-              <Button variant="ghost" size="sm" className="text-muted-foreground min-h-[44px]" onClick={handleCreateNext}>
+              <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={handleCreateNext}>
                 + 次のページを作成
               </Button>
             )}
@@ -168,6 +167,29 @@ export default function ConversationPageView({
             <AgentPanel agentId={agentId} />
           </aside>
         )}
+      </div>
+
+      {/* Mobile: 固定ボトムナビゲーション */}
+      <div className="fixed md:hidden bottom-0 left-0 right-0 z-30 border-t bg-white/95 backdrop-blur-sm pb-[env(safe-area-inset-bottom)]">
+        <div className="flex items-center justify-between px-4 h-12">
+          {prevPageId ? (
+            <Link href={`/c/${conversationId}/${prevPageId}`} className="flex items-center gap-1 text-sm text-muted-foreground active:text-foreground min-h-[44px] px-2">
+              <ChevronLeft className="size-4" />
+              前のページ
+            </Link>
+          ) : <div />}
+          <span className="text-xs text-muted-foreground">{pageNumber} / {totalPages}</span>
+          {nextPage ? (
+            <Link href={`/c/${conversationId}/${nextPage}`} className="flex items-center gap-1 text-sm text-muted-foreground active:text-foreground min-h-[44px] px-2">
+              次のページ
+              <ChevronRight className="size-4" />
+            </Link>
+          ) : (
+            <button onClick={handleCreateNext} className="flex items-center gap-1 text-sm text-muted-foreground active:text-foreground min-h-[44px] px-2">
+              + 新規作成
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Agent Panel — Mobile Drawer */}
@@ -183,6 +205,9 @@ export default function ConversationPageView({
           </DrawerContent>
         </Drawer>
       )}
+
+      {/* モバイルボトムバー分のスペーサー */}
+      <div className="h-14 md:hidden" />
     </div>
   )
 }
