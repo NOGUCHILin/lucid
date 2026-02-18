@@ -1,8 +1,14 @@
 import Mention from '@tiptap/extension-mention'
-import { type SuggestionOptions } from '@tiptap/suggestion'
+import { type SuggestionOptions, type SuggestionProps } from '@tiptap/suggestion'
+
+interface MentionItem {
+  id: string
+  name: string
+  email: string
+}
 
 // Simple suggestion config: fetches users from API
-const suggestion: Partial<SuggestionOptions> = {
+const suggestion: Partial<SuggestionOptions<MentionItem>> = {
   items: async ({ query }) => {
     if (!query || query.length < 1) return []
     try {
@@ -42,7 +48,7 @@ const suggestion: Partial<SuggestionOptions> = {
   },
 }
 
-function updatePopup(popup: HTMLDivElement, props: any) {
+function updatePopup(popup: HTMLDivElement, props: SuggestionProps<MentionItem>) {
   const { items, command, clientRect } = props
   popup.innerHTML = ''
 
@@ -58,7 +64,7 @@ function updatePopup(popup: HTMLDivElement, props: any) {
     popup.style.left = `${rect.left + window.scrollX}px`
   }
 
-  items.forEach((item: any) => {
+  items.forEach((item: MentionItem) => {
     const btn = document.createElement('button')
     btn.className = 'block w-full rounded px-3 py-1.5 text-left hover:bg-neutral-100'
     btn.textContent = item.name || item.email || item.id

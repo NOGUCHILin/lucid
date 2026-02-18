@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient, createAdminClient } from '@lucid/database'
 
@@ -14,7 +15,7 @@ export async function GET(request: NextRequest) {
 
   const admin = createAdminClient()
 
-  const { data, error } = await (admin as any).auth.admin.listUsers({
+  const { data, error } = await admin.auth.admin.listUsers({
     page: 1,
     perPage: 10,
   })

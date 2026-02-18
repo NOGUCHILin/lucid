@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { createClient as createBrowserClient } from '@lucid/database/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
-export default function LoginPage() {
+function LoginForm() {
   const searchParams = useSearchParams()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -112,101 +112,109 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-neutral-50">
-      <div className="w-full max-w-sm space-y-6">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold">Lucid</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {mode === 'login' ? 'ログイン' : 'アカウント作成'}
-          </p>
-          {mode === 'signup' && (
-            <p className="text-xs text-muted-foreground mt-1">
-              招待制アプリケーションです
-            </p>
-          )}
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {mode === 'signup' && (
-            <div>
-              <Input
-                type="text"
-                placeholder="招待コード"
-                aria-label="招待コード"
-                value={inviteCode}
-                onChange={(e) => {
-                  const val = e.target.value.toUpperCase()
-                  setInviteCode(val)
-                  if (val.length >= 8) verifyInviteCode(val)
-                  else { setInviteValid(null); setInviteError(null) }
-                }}
-                required
-                className={
-                  inviteValid === true
-                    ? 'border-green-500 focus-visible:ring-green-500'
-                    : inviteValid === false
-                    ? 'border-red-500 focus-visible:ring-red-500'
-                    : ''
-                }
-              />
-              {inviteValid === true && (
-                <p className="text-xs text-green-600 mt-1">有効な招待コードです</p>
-              )}
-              {inviteError && (
-                <p className="text-xs text-red-500 mt-1">{inviteError}</p>
-              )}
-            </div>
-          )}
-
-          <Input
-            type="email"
-            placeholder="メールアドレス"
-            aria-label="メールアドレス"
-            autoComplete="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-          <Input
-            type="password"
-            placeholder="パスワード"
-            aria-label="パスワード"
-            autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={6}
-          />
-
-          {error && <p className="text-sm text-red-500" role="alert">{error}</p>}
-
-          <Button
-            type="submit"
-            className="w-full"
-            disabled={loading || (mode === 'signup' && inviteValid === false)}
-          >
-            {loading ? '処理中...' : mode === 'login' ? 'ログイン' : '登録'}
-          </Button>
-        </form>
-
-        <p className="text-center text-sm text-muted-foreground">
-          {mode === 'login' ? (
-            <>
-              招待コードをお持ちの方は{' '}
-              <button className="underline" onClick={() => setMode('signup')}>
-                新規登録
-              </button>
-            </>
-          ) : (
-            <>
-              アカウントをお持ちの方は{' '}
-              <button className="underline" onClick={() => setMode('login')}>
-                ログイン
-              </button>
-            </>
-          )}
+    <div className="w-full max-w-sm space-y-6">
+      <div className="text-center">
+        <h1 className="text-2xl font-bold">Lucid</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          {mode === 'login' ? 'ログイン' : 'アカウント作成'}
         </p>
+        {mode === 'signup' && (
+          <p className="text-xs text-muted-foreground mt-1">
+            招待制アプリケーションです
+          </p>
+        )}
       </div>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {mode === 'signup' && (
+          <div>
+            <Input
+              type="text"
+              placeholder="招待コード"
+              aria-label="招待コード"
+              value={inviteCode}
+              onChange={(e) => {
+                const val = e.target.value.toUpperCase()
+                setInviteCode(val)
+                if (val.length >= 8) verifyInviteCode(val)
+                else { setInviteValid(null); setInviteError(null) }
+              }}
+              required
+              className={
+                inviteValid === true
+                  ? 'border-green-500 focus-visible:ring-green-500'
+                  : inviteValid === false
+                  ? 'border-red-500 focus-visible:ring-red-500'
+                  : ''
+              }
+            />
+            {inviteValid === true && (
+              <p className="text-xs text-green-600 mt-1">有効な招待コードです</p>
+            )}
+            {inviteError && (
+              <p className="text-xs text-red-500 mt-1">{inviteError}</p>
+            )}
+          </div>
+        )}
+
+        <Input
+          type="email"
+          placeholder="メールアドレス"
+          aria-label="メールアドレス"
+          autoComplete="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
+        <Input
+          type="password"
+          placeholder="パスワード"
+          aria-label="パスワード"
+          autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          minLength={6}
+        />
+
+        {error && <p className="text-sm text-red-500" role="alert">{error}</p>}
+
+        <Button
+          type="submit"
+          className="w-full"
+          disabled={loading || (mode === 'signup' && inviteValid === false)}
+        >
+          {loading ? '処理中...' : mode === 'login' ? 'ログイン' : '登録'}
+        </Button>
+      </form>
+
+      <p className="text-center text-sm text-muted-foreground">
+        {mode === 'login' ? (
+          <>
+            招待コードをお持ちの方は{' '}
+            <button className="underline" onClick={() => setMode('signup')}>
+              新規登録
+            </button>
+          </>
+        ) : (
+          <>
+            アカウントをお持ちの方は{' '}
+            <button className="underline" onClick={() => setMode('login')}>
+              ログイン
+            </button>
+          </>
+        )}
+      </p>
+    </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-neutral-50">
+      <Suspense fallback={<div className="text-sm text-muted-foreground">読み込み中...</div>}>
+        <LoginForm />
+      </Suspense>
     </div>
   )
 }

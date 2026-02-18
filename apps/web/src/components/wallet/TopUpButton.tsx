@@ -10,6 +10,7 @@ interface TopUpButtonProps {
   onSuccess?: () => void
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function TopUpButton({ onSuccess }: TopUpButtonProps) {
   const [loading, setLoading] = useState(false)
   const [open, setOpen] = useState(false)

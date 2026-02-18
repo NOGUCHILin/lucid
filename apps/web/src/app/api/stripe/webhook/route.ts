@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { createAdminClient } from '@lucid/database'
@@ -23,10 +24,10 @@ export async function POST(request: NextRequest) {
     const amount = Number(session.metadata?.amount || 0)
 
     if (userId && amount > 0) {
-      const admin = createAdminClient()
+      const admin = createAdminClient() as any
 
       // Idempotency: check if this session was already processed
-      const { data: existing } = await (admin as any)
+      const { data: existing } = await admin
         .from('transactions')
         .select('id')
         .eq('description', `Stripe checkout ${session.id}`)
@@ -37,7 +38,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Atomic top-up via wallet_top_up RPC (FOR UPDATE lock inside)
-      const { error: rpcError } = await (admin as any).rpc('wallet_top_up', {
+      const { error: rpcError } = await admin.rpc('wallet_top_up', {
         p_entity_id: userId,
         p_amount: amount,
         p_description: `Stripe checkout ${session.id}`,

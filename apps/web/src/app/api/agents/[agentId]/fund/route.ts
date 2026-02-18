@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient, createAdminClient } from '@lucid/database'
 
@@ -20,10 +21,10 @@ export async function POST(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const admin = createAdminClient()
+  const admin = createAdminClient() as any
 
   // Get user wallet
-  const { data: userWallet } = await (admin as any)
+  const { data: userWallet } = await admin
     .from('wallets')
     .select('id')
     .eq('entity_id', user.id)
@@ -35,7 +36,7 @@ export async function POST(
   }
 
   // Get agent wallet
-  const { data: agentWallet } = await (admin as any)
+  const { data: agentWallet } = await admin
     .from('wallets')
     .select('id')
     .eq('entity_id', agentId)
@@ -47,7 +48,7 @@ export async function POST(
   }
 
   // Atomic transfer via RPC
-  const { data, error } = await (admin as any).rpc('transfer_funds', {
+  const { data, error } = await admin.rpc('transfer_funds', {
     p_from_wallet: userWallet.id,
     p_to_wallet: agentWallet.id,
     p_amount: amount,

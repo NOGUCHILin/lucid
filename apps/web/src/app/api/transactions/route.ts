@@ -14,6 +14,7 @@ export async function POST(request: NextRequest) {
   // For transfers, use the transfer_funds RPC (atomic + authorized)
   if (body.type === 'transfer' && body.fromWalletId && body.toWalletId) {
     const admin = createAdminClient()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (admin as any).rpc('transfer_funds', {
       p_from_wallet: body.fromWalletId,
       p_to_wallet: body.toWalletId,
