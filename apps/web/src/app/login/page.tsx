@@ -211,7 +211,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-neutral-50">
+    <div className="min-h-screen flex items-center justify-center bg-neutral-50 px-4">
       <Suspense fallback={<div className="text-sm text-muted-foreground">読み込み中...</div>}>
         <LoginForm />
       </Suspense>
