@@ -1,19 +1,17 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
-import { Plus, Search, PanelLeftClose, PanelLeft, FileText, UserPlus } from 'lucide-react'
+import { Search, PanelLeftClose, PanelLeft, UserPlus, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { WalletWidget } from '@/components/wallet/WalletWidget'
 import { NotificationBell } from '@/components/notifications/NotificationBell'
-
-interface Page {
-  id: string
-  title: string
-  updated_at: string
-}
+import { ConversationItem } from './ConversationItem'
+import { FriendRequestModal } from './FriendRequestModal'
+import { useConversations } from '@/hooks/useConversations'
+import { useFriends } from '@/hooks/useFriends'
 
 interface SidebarProps {
   collapsed: boolean
@@ -22,34 +20,17 @@ interface SidebarProps {
 
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const pathname = usePathname()
-  const router = useRouter()
-  const [pages, setPages] = useState<Page[]>([])
-  const [query, setQuery] = useState('')
+  const { conversations, query, search } = useConversations()
+  const { pendingCount } = useFriends()
+  const [friendModalOpen, setFriendModalOpen] = useState(false)
 
-  useEffect(() => {
-    const params = new URLSearchParams()
-    if (query) params.set('q', query)
-    params.set('sort', 'updated_at')
-    params.set('order', 'desc')
+  // /c/[conversationId] からIDを抽出
+  const activeConvId = pathname.startsWith('/c/')
+    ? pathname.split('/')[2]
+    : ''
 
-    fetch(`/api/pages?${params}`)
-      .then((r) => r.ok ? r.json() : [])
-      .then(setPages)
-      .catch(() => setPages([]))
-  }, [query, pathname]) // refetch on navigation
-
-  async function createPage() {
-    const res = await fetch('/api/pages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: '無題のページ' }),
-    })
-    if (!res.ok) return
-    const page: { id: string } = await res.json()
-    router.push(`/${page.id}`)
-  }
-
-  const currentPageId = pathname.startsWith('/') ? pathname.slice(1) : ''
+  const pinned = conversations.filter(c => c.pinned)
+  const recent = conversations.filter(c => !c.pinned)
 
   if (collapsed) {
     return (
@@ -57,9 +38,10 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
         <Button variant="ghost" size="icon" onClick={onToggle} className="size-8">
           <PanelLeft className="size-4" />
         </Button>
-        <Button variant="ghost" size="icon" onClick={createPage} className="size-8">
-          <Plus className="size-4" />
+        <Button variant="ghost" size="icon" onClick={() => setFriendModalOpen(true)} className="size-8">
+          <UserPlus className="size-4" />
         </Button>
+        <FriendRequestModal open={friendModalOpen} onClose={() => setFriendModalOpen(false)} />
       </div>
     )
   }
@@ -69,9 +51,14 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-3 border-b">
         <Link href="/" className="font-bold text-lg">Lucid</Link>
-        <Button variant="ghost" size="icon" onClick={onToggle} className="size-7">
-          <PanelLeftClose className="size-4" />
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon" onClick={() => setFriendModalOpen(true)} className="size-7">
+            <UserPlus className="size-4" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={onToggle} className="size-7">
+            <PanelLeftClose className="size-4" />
+          </Button>
+        </div>
       </div>
 
       {/* Search */}
@@ -81,52 +68,70 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
           <Input
             placeholder="検索..."
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => search(e.target.value)}
             className="pl-8 h-8 text-sm"
           />
         </div>
       </div>
 
-      {/* New page */}
-      <div className="px-3 pb-2">
-        <Button variant="ghost" size="sm" className="w-full justify-start text-sm" onClick={createPage}>
-          <Plus className="size-3.5 mr-1.5" />
-          新しいページ
-        </Button>
-      </div>
-
-      {/* Page list */}
+      {/* Conversation List */}
       <div className="flex-1 overflow-y-auto px-1.5">
-        {pages.map((page) => {
-          const isActive = currentPageId === page.id
-          return (
-            <Link key={page.id} href={`/${page.id}`}>
-              <div className={`flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors ${
-                isActive ? 'bg-neutral-100 font-medium' : 'hover:bg-neutral-50 text-muted-foreground'
-              }`}>
-                <FileText className="size-3.5 shrink-0" />
-                <span className="truncate">{page.title || '無題のページ'}</span>
+        {/* Pinned */}
+        {pinned.length > 0 && (
+          <>
+            <div className="px-2 py-1 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+              ピン留め
+            </div>
+            {pinned.map(conv => (
+              <ConversationItem key={conv.id} conversation={conv} isActive={activeConvId === conv.id} />
+            ))}
+          </>
+        )}
+
+        {/* Recent */}
+        {recent.length > 0 && (
+          <>
+            {pinned.length > 0 && (
+              <div className="px-2 pt-2 pb-1 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                最近
               </div>
-            </Link>
-          )
-        })}
+            )}
+            {recent.map(conv => (
+              <ConversationItem key={conv.id} conversation={conv} isActive={activeConvId === conv.id} />
+            ))}
+          </>
+        )}
+
+        {conversations.length === 0 && (
+          <div className="px-3 py-8 text-center text-sm text-muted-foreground">
+            会話がありません
+          </div>
+        )}
       </div>
 
-      {/* Bottom: Invite + Wallet + Notifications */}
-      <div className="border-t px-3 py-2 space-y-1">
-        <Link href="/invitations">
-          <div className={`flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors ${
-            pathname === '/invitations' ? 'bg-neutral-100 font-medium' : 'hover:bg-neutral-50 text-muted-foreground'
-          }`}>
-            <UserPlus className="size-3.5 shrink-0" />
-            <span>招待管理</span>
-          </div>
-        </Link>
+      {/* Pending Friend Requests */}
+      {pendingCount > 0 && (
+        <button
+          onClick={() => setFriendModalOpen(true)}
+          className="mx-3 mb-1 flex items-center gap-2 px-2 py-1.5 rounded-md text-sm hover:bg-neutral-50 text-muted-foreground"
+        >
+          <Users className="size-3.5" />
+          <span>フレンドリクエスト</span>
+          <span className="ml-auto bg-red-500 text-white text-[10px] rounded-full px-1.5 py-0.5 leading-none">
+            {pendingCount}
+          </span>
+        </button>
+      )}
+
+      {/* Bottom: Wallet + Notifications */}
+      <div className="border-t px-3 py-2">
         <div className="flex items-center gap-2">
           <WalletWidget />
           <NotificationBell />
         </div>
       </div>
+
+      <FriendRequestModal open={friendModalOpen} onClose={() => setFriendModalOpen(false)} />
     </div>
   )
 }
