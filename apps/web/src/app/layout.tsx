@@ -20,6 +20,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ja">
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+      </head>
       <body className={`${geist.variable} font-sans antialiased bg-neutral-50`}>
         <AppShell>{children}</AppShell>
       </body>

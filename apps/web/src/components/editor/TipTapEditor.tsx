@@ -168,9 +168,9 @@ export function TipTapEditor({
   }, [editor, provider, userName, userColor])
 
   return (
-    <div className="flex flex-col items-center gap-2 md:gap-4">
-      {/* Status + Presence */}
-      <div className="flex flex-wrap items-center gap-2 md:gap-3 text-xs md:text-sm text-muted-foreground px-3 md:px-0" aria-live="polite">
+    <div className="flex flex-col items-center gap-0 md:gap-4">
+      {/* Status + Presence — モバイルでは最小表示 */}
+      <div className="hidden md:flex flex-wrap items-center gap-3 text-sm text-muted-foreground" aria-live="polite">
         <div className="flex items-center gap-2">
           <div
             className={`h-2 w-2 rounded-full ${
@@ -185,6 +185,15 @@ export function TipTapEditor({
           <span>{status === 'connected' ? '接続済み' : status === 'connecting' ? '接続中...' : '切断'}</span>
         </div>
         <PresenceBar provider={provider} />
+      </div>
+      {/* モバイル: 接続ドットだけ表示 */}
+      <div className="flex md:hidden items-center gap-1.5 text-xs text-muted-foreground py-1">
+        <div
+          className={`h-1.5 w-1.5 rounded-full ${
+            status === 'connected' ? 'bg-green-500' : status === 'connecting' ? 'bg-yellow-500' : 'bg-red-500'
+          }`}
+        />
+        <span>{status === 'connected' ? '接続済み' : status === 'connecting' ? '接続中...' : '切断'}</span>
       </div>
       <TypingIndicator provider={provider} />
 
