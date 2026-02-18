@@ -49,7 +49,7 @@ export function ConversationItem({ conversation, isActive, onClick }: Props) {
         </div>
 
         {/* Time */}
-        <span className="text-[10px] text-muted-foreground shrink-0">
+        <span className="text-xs text-muted-foreground shrink-0">
           {timeAgo(lastActivity)}
         </span>
       </div>

@@ -91,7 +91,7 @@ export function Sidebar({ collapsed, onToggle, onNavigate, inSheet = false }: Si
       <div className="flex-1 overflow-y-auto px-1.5">
         {pinned.length > 0 && (
           <>
-            <div className="px-2 py-1 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+            <div className="px-2 py-1 text-xs font-medium text-muted-foreground uppercase tracking-wider">
               ピン留め
             </div>
             {pinned.map(conv => (
@@ -103,7 +103,7 @@ export function Sidebar({ collapsed, onToggle, onNavigate, inSheet = false }: Si
         {recent.length > 0 && (
           <>
             {pinned.length > 0 && (
-              <div className="px-2 pt-2 pb-1 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+              <div className="px-2 pt-2 pb-1 text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 最近
               </div>
             )}
@@ -128,7 +128,7 @@ export function Sidebar({ collapsed, onToggle, onNavigate, inSheet = false }: Si
         >
           <Users className="size-3.5" />
           <span>フレンドリクエスト</span>
-          <span className="ml-auto bg-red-500 text-white text-[10px] rounded-full px-1.5 py-0.5 leading-none">
+          <span className="ml-auto bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5 leading-none">
             {pendingCount}
           </span>
         </button>
