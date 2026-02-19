@@ -1,12 +1,11 @@
 'use client'
 
-import { use, useEffect, useState } from 'react'
+import { use, useCallback, useEffect, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Bot, ChevronLeft, ChevronRight, List, User } from 'lucide-react'
+import { ChevronLeft, ChevronRight, List, Bot, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer'
 import { usePageThreshold } from '@/hooks/usePageThreshold'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { AgentPanel } from '@/components/agent/AgentPanel'
@@ -40,6 +39,10 @@ export default function ConversationPageView({
   const [convName, setConvName] = useState('')
   const [convType, setConvType] = useState<'human' | 'agent'>('human')
   const [pageListOpen, setPageListOpen] = useState(false)
+
+  // スワイプ検出用
+  const touchStartX = useRef(0)
+  const touchStartY = useRef(0)
 
   // ユーザー情報＋ページ情報取得
   useEffect(() => {
@@ -84,10 +87,35 @@ export default function ConversationPageView({
   const pageNumber = currentIdx >= 0 ? currentIdx + 1 : 1
   const totalPages = pages.length
 
+  // スワイプハンドラー
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX
+    touchStartY.current = e.touches[0].clientY
+  }, [])
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    const dx = e.changedTouches[0].clientX - touchStartX.current
+    const dy = e.changedTouches[0].clientY - touchStartY.current
+    // 水平方向のスワイプのみ検出（60px以上、垂直は30px未満）
+    if (Math.abs(dx) < 60 || Math.abs(dy) > 30) return
+    if (dx > 0 && prevPageId) {
+      router.push(`/c/${conversationId}/${prevPageId}`)
+    } else if (dx < 0 && nextPage) {
+      router.push(`/c/${conversationId}/${nextPage}`)
+    } else if (dx < 0 && !nextPage) {
+      handleCreateNext()
+    }
+  }, [prevPageId, nextPage, conversationId, router, handleCreateNext])
+
   return (
-    <div className="min-h-screen bg-white md:bg-neutral-100 py-0 md:py-4">
-      {/* Conversation Header */}
-      <div className="max-w-[var(--page-width)] mx-auto mb-0 md:mb-3 px-3 md:px-0 py-2 md:py-0 border-b md:border-0 flex items-center justify-between">
+    <div
+      className="min-h-screen bg-white md:bg-neutral-100 py-0 md:py-4"
+      onTouchStart={isMobile ? handleTouchStart : undefined}
+      onTouchEnd={isMobile ? handleTouchEnd : undefined}
+    >
+      {/* Conversation Header — モバイルでは非表示（AppShellヘッダーに統合） */}
+      {/* デスクトップのみ表示 */}
+      <div className="hidden md:flex max-w-[var(--page-width)] mx-auto mb-3 items-center justify-between">
         <div className="flex items-center gap-2">
           <div className={`size-7 rounded-full flex items-center justify-center ${
             convType === 'agent' ? 'bg-violet-100 text-violet-600' : 'bg-blue-100 text-blue-600'
@@ -101,7 +129,7 @@ export default function ConversationPageView({
         </div>
 
         <div className="flex items-center gap-1">
-          {/* Page list toggle */}
+          {/* Page list toggle — デスクトップのみ */}
           <div className="relative">
             <Button variant="ghost" size="icon" className="size-9" onClick={() => setPageListOpen(!pageListOpen)}>
               <List className="size-4" />
@@ -128,6 +156,18 @@ export default function ConversationPageView({
               <Bot className="size-4" />
             </Button>
           )}
+        </div>
+      </div>
+
+      {/* Mobile: 統合ヘッダー内の会話情報（AppShellのヘッダーに代わるインライン表示） */}
+      <div className="flex md:hidden items-center justify-between px-3 py-1.5 border-b">
+        <div className="flex items-center gap-2">
+          <div className={`size-6 rounded-full flex items-center justify-center ${
+            convType === 'agent' ? 'bg-violet-100 text-violet-600' : 'bg-blue-100 text-blue-600'
+          }`}>
+            {convType === 'agent' ? <Bot className="size-3" /> : <User className="size-3" />}
+          </div>
+          <span className="font-medium text-sm truncate">{convName || '自分'}</span>
         </div>
       </div>
 
@@ -169,45 +209,22 @@ export default function ConversationPageView({
         )}
       </div>
 
-      {/* Mobile: 固定ボトムナビゲーション */}
-      <div className="fixed md:hidden bottom-0 left-0 right-0 z-30 border-t bg-white/95 backdrop-blur-sm pb-[env(safe-area-inset-bottom)]">
-        <div className="flex items-center justify-between px-4 h-12">
-          {prevPageId ? (
-            <Link href={`/c/${conversationId}/${prevPageId}`} className="flex items-center gap-1 text-sm text-muted-foreground active:text-foreground min-h-[44px] px-2">
-              <ChevronLeft className="size-4" />
-              前のページ
+      {/* Mobile: ドットインジケーター（画面下部固定） */}
+      {isMobile && totalPages > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 z-30 flex justify-center items-center gap-1.5 py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
+          {pages.map((p) => (
+            <Link key={p.id} href={`/c/${conversationId}/${p.id}`}>
+              <div className={`rounded-full transition-all ${
+                p.id === pageId
+                  ? 'w-2 h-2 bg-foreground'
+                  : 'w-1.5 h-1.5 bg-neutral-300'
+              }`} />
             </Link>
-          ) : <div />}
-          <span className="text-xs text-muted-foreground">{pageNumber} / {totalPages}</span>
-          {nextPage ? (
-            <Link href={`/c/${conversationId}/${nextPage}`} className="flex items-center gap-1 text-sm text-muted-foreground active:text-foreground min-h-[44px] px-2">
-              次のページ
-              <ChevronRight className="size-4" />
-            </Link>
-          ) : (
-            <button onClick={handleCreateNext} className="flex items-center gap-1 text-sm text-muted-foreground active:text-foreground min-h-[44px] px-2">
-              + 新規作成
-            </button>
-          )}
+          ))}
+          <button onClick={handleCreateNext} className="w-1.5 h-1.5 rounded-full border border-neutral-300 border-dashed" />
         </div>
-      </div>
-
-      {/* Agent Panel — Mobile Drawer */}
-      {isMobile && (
-        <Drawer open={panelOpen} onOpenChange={setPanelOpen}>
-          <DrawerContent className="max-h-[85vh]">
-            <DrawerHeader>
-              <DrawerTitle>エージェント</DrawerTitle>
-            </DrawerHeader>
-            <div className="overflow-y-auto px-4 pb-4">
-              <AgentPanel agentId={agentId} />
-            </div>
-          </DrawerContent>
-        </Drawer>
       )}
 
-      {/* モバイルボトムバー分のスペーサー */}
-      <div className="h-14 md:hidden" />
     </div>
   )
 }
