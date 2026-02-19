@@ -44,12 +44,24 @@ export const InlineSuggestion = Extension.create<InlineSuggestionOptions>({
             }
             if (meta?.suggestion) {
               const pos = newState.selection.$head.pos
-              const widget = Decoration.widget(pos, () => {
+              const suggestionText = meta.suggestion
+              const widget = Decoration.widget(pos, (view) => {
                 const span = document.createElement('span')
-                span.textContent = meta.suggestion
+                span.textContent = suggestionText
                 span.style.color = '#9ca3af'
-                span.style.pointerEvents = 'none'
+                span.style.cursor = 'pointer'
                 span.setAttribute('data-suggestion', 'true')
+                // タップ/クリックで承認
+                span.addEventListener('click', (e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  if (!view) return
+                  const { tr } = view.state
+                  const insertPos = view.state.selection.$head.pos
+                  const insertTr = tr.insertText(suggestionText, insertPos)
+                  insertTr.setMeta(pluginKey, { clear: true })
+                  view.dispatch(insertTr)
+                })
                 return span
               }, { side: 1 })
               return {
@@ -101,14 +113,11 @@ export const InlineSuggestion = Extension.create<InlineSuggestionOptions>({
         },
         view() {
           let debounceTimer: ReturnType<typeof setTimeout> | null = null
-          let prevDoc: ReturnType<typeof Object.create> | null = null
 
           return {
             update(view, lastState) {
               // doc が変わっていない場合はスキップ（メタのみのtransaction）
               if (lastState && view.state.doc.eq(lastState.doc)) return
-
-              prevDoc = view.state.doc
 
               // タイマーリセット
               if (debounceTimer) clearTimeout(debounceTimer)

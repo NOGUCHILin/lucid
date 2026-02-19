@@ -102,6 +102,7 @@ ${params.recentEvents}
 export async function generateAmbientResponse(params: {
   pageContent: string
   crossContextSummaries: string
+  graphitiFacts?: string
   userName: string
   agentName: string
 }): Promise<LLMResponse | null> {
@@ -121,7 +122,8 @@ ${params.userName}の全会話の文脈を把握しており、${params.userName
 ## ルール
 - 提案は1文のみ（短く自然に）
 - ユーザーの文脈に合った内容だけを提案
-- 説明や前置きは不要。提案文のみ出力`
+- 説明や前置きは不要。提案文のみ出力
+${params.graphitiFacts ? `\n## 関連する過去の知識\n${params.graphitiFacts}` : ''}`
 
   const userMessage = `${params.crossContextSummaries ? `【他の会話の文脈】\n${params.crossContextSummaries}\n\n` : ''}【現在のテキスト】
 ${params.pageContent.substring(0, 2000)}

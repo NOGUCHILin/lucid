@@ -7,6 +7,11 @@ import { setHocuspocusInstance } from './agent-writer'
 import { setHocuspocusRef } from './agent-actions'
 import { setAgentLoopHocuspocus } from './agent-loop'
 import { startContextSummarizer } from './context-summarizer'
+import { registerHandler } from './event-router'
+import { handleInputPause } from './handlers/input-pause-handler'
+import { handleMention } from './handlers/mention-handler'
+import { handleParagraphComplete } from './handlers/paragraph-handler'
+import { handlePageTransition } from './handlers/page-transition-handler'
 
 // Auth is always required — refuse to start without service role key in production
 const isProduction = process.env.NODE_ENV === 'production'
@@ -26,6 +31,12 @@ export const server = new Server({
     agentBridgeExtension,
   ],
 })
+
+// イベントハンドラ登録
+registerHandler('input_pause', handleInputPause)
+registerHandler('mention', handleMention)
+registerHandler('paragraph_complete', handleParagraphComplete)
+registerHandler('page_transition', handlePageTransition)
 
 server.listen().then(() => {
   const hocuspocus = (server as any).hocuspocus
