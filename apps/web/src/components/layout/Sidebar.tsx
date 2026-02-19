@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { Search, PanelLeftClose, PanelLeft, UserPlus, Users } from 'lucide-react'
+import { Search, PanelLeftClose, PanelLeft, UserPlus, Users, Bot, ChevronUp } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { WalletWidget } from '@/components/wallet/WalletWidget'
@@ -12,6 +12,7 @@ import { ConversationItem } from './ConversationItem'
 import { FriendRequestModal } from './FriendRequestModal'
 import { useConversations } from '@/hooks/useConversations'
 import { useFriends } from '@/hooks/useFriends'
+import { AgentPanel } from '@/components/agent/AgentPanel'
 
 interface SidebarProps {
   collapsed: boolean
@@ -26,10 +27,15 @@ export function Sidebar({ collapsed, onToggle, onNavigate, inSheet = false }: Si
   const { conversations, query, search } = useConversations()
   const { pendingCount } = useFriends()
   const [friendModalOpen, setFriendModalOpen] = useState(false)
+  const [agentPanelOpen, setAgentPanelOpen] = useState(false)
 
   const activeConvId = pathname.startsWith('/c/')
     ? pathname.split('/')[2]
     : ''
+
+  const activeConv = conversations.find(c => c.id === activeConvId)
+  const isAgentConv = activeConv?.type === 'agent'
+  const activeAgentId = activeConv?.agentId ?? null
 
   const pinned = conversations.filter(c => c.pinned)
   const recent = conversations.filter(c => !c.pinned)
@@ -134,11 +140,28 @@ export function Sidebar({ collapsed, onToggle, onNavigate, inSheet = false }: Si
         </button>
       )}
 
-      {/* Bottom: Wallet + Notifications */}
+      {/* Agent Panel — エージェント会話時のみ表示 */}
+      {isAgentConv && agentPanelOpen && (
+        <div className="border-t max-h-64 overflow-y-auto">
+          <AgentPanel agentId={activeAgentId} />
+        </div>
+      )}
+
+      {/* Bottom: Wallet + Notifications + Agent */}
       <div className="border-t px-3 py-2.5">
         <div className="flex items-center gap-2">
           <WalletWidget />
           <NotificationBell />
+          {isAgentConv && (
+            <Button
+              variant={agentPanelOpen ? 'default' : 'ghost'}
+              size="icon"
+              className="size-8 ml-auto"
+              onClick={() => setAgentPanelOpen(!agentPanelOpen)}
+            >
+              <Bot className="size-4" />
+            </Button>
+          )}
         </div>
       </div>
 
