@@ -109,7 +109,7 @@ export default function ConversationPageView({
 
   return (
     <div
-      className="min-h-screen bg-white md:bg-neutral-100 py-0 md:py-4"
+      className="h-dvh md:h-auto md:min-h-screen overflow-hidden md:overflow-auto flex flex-col md:block bg-white md:bg-neutral-100 py-0 md:py-4"
       onTouchStart={isMobile ? handleTouchStart : undefined}
       onTouchEnd={isMobile ? handleTouchEnd : undefined}
     >
@@ -171,9 +171,9 @@ export default function ConversationPageView({
         </div>
       </div>
 
-      <div className="flex gap-0 md:gap-4 max-w-full md:max-w-[calc(var(--page-width)+320px)] mx-auto">
+      <div className="flex flex-1 min-h-0 gap-0 md:flex-none md:gap-4 max-w-full md:max-w-[calc(var(--page-width)+320px)] mx-auto">
         {/* Editor */}
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 overflow-y-auto md:overflow-visible">
           <TipTapEditor pageId={pageId} userId={userId} onTextUpdate={onUpdate} enableSuggestion={convType === 'agent'} />
 
           {/* Page Navigation — デスクトップ */}
