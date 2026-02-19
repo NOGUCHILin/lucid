@@ -109,7 +109,7 @@ export default function ConversationPageView({
 
   return (
     <div
-      className="h-dvh md:h-auto md:min-h-screen overflow-hidden md:overflow-auto flex flex-col md:block bg-white md:bg-neutral-100 py-0 md:py-4"
+      className="h-full md:h-auto md:min-h-screen overflow-hidden md:overflow-auto flex flex-col md:block bg-white md:bg-neutral-100 py-0 md:py-4"
       onTouchStart={isMobile ? handleTouchStart : undefined}
       onTouchEnd={isMobile ? handleTouchEnd : undefined}
     >

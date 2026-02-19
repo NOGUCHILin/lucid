@@ -38,8 +38,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   if (isMobile) {
     return (
-      <div className="flex flex-col min-h-screen">
-        <header className="sticky top-0 z-40 flex items-center h-12 px-3 border-b bg-white/95 backdrop-blur-sm pt-[env(safe-area-inset-top)]">
+      <div className="flex flex-col h-dvh overflow-hidden">
+        <header className="shrink-0 z-40 flex items-center h-12 px-3 border-b bg-white/95 backdrop-blur-sm pt-[env(safe-area-inset-top)]">
           <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(true)}>
             <Menu className="size-5" />
           </Button>
@@ -51,7 +51,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Sidebar collapsed={false} onToggle={() => setSidebarOpen(false)} onNavigate={() => setSidebarOpen(false)} inSheet />
           </SheetContent>
         </Sheet>
-        <main className="flex-1 min-w-0">{children}</main>
+        <main className="flex-1 min-h-0 min-w-0 overflow-hidden">{children}</main>
       </div>
     )
   }
