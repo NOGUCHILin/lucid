@@ -113,6 +113,23 @@ export const InlineSuggestion = Extension.create<InlineSuggestionOptions>({
         },
         view() {
           let debounceTimer: ReturnType<typeof setTimeout> | null = null
+          let retryTimer: ReturnType<typeof setTimeout> | null = null
+
+          const tryFetch = async (view: import('@tiptap/pm/view').EditorView, attempt: number) => {
+            try {
+              const suggestion = await fetchSuggestion()
+              if (suggestion && view.dom.isConnected) {
+                const { tr } = view.state
+                tr.setMeta(pluginKey, { suggestion })
+                view.dispatch(tr)
+              } else if (!suggestion && attempt < 2 && view.dom.isConnected) {
+                // サーバーが提案生成中の可能性 → 3秒後にリトライ
+                retryTimer = setTimeout(() => tryFetch(view, attempt + 1), 3000)
+              }
+            } catch {
+              // 提案取得失敗は無視
+            }
+          }
 
           return {
             update(view, lastState) {
@@ -121,23 +138,14 @@ export const InlineSuggestion = Extension.create<InlineSuggestionOptions>({
 
               // タイマーリセット
               if (debounceTimer) clearTimeout(debounceTimer)
+              if (retryTimer) clearTimeout(retryTimer)
 
-              // delay後に提案を取得
-              debounceTimer = setTimeout(async () => {
-                try {
-                  const suggestion = await fetchSuggestion()
-                  if (suggestion && view.dom.isConnected) {
-                    const { tr } = view.state
-                    tr.setMeta(pluginKey, { suggestion })
-                    view.dispatch(tr)
-                  }
-                } catch {
-                  // 提案取得失敗は無視
-                }
-              }, delay)
+              // delay後に提案を取得（リトライ付き）
+              debounceTimer = setTimeout(() => tryFetch(view, 0), delay)
             },
             destroy() {
               if (debounceTimer) clearTimeout(debounceTimer)
+              if (retryTimer) clearTimeout(retryTimer)
             },
           }
         },
