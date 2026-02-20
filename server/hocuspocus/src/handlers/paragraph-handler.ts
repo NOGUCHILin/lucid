@@ -9,7 +9,7 @@ export async function handleParagraphComplete(event: AgentEvent, config: AgentCo
   const paragraphText = (event.payload.paragraphText as string) || ''
   if (!paragraphText || paragraphText.trim().length < 10) return
 
-  const groupId = `user:${config.ownerId || event.userId}`
+  const groupId = `user-${config.ownerId || event.userId}`
 
   // Graphitiにエピソード追加（非同期）
   addEpisode({

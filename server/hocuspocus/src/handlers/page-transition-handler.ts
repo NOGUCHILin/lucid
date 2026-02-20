@@ -29,7 +29,7 @@ export async function handlePageTransition(event: AgentEvent, config: AgentConfi
     const fullText = await readPage(oldPageId)
     if (!fullText || fullText.trim().length < 10) return
 
-    const groupId = `user:${config.ownerId || event.userId}`
+    const groupId = `user-${config.ownerId || event.userId}`
 
     // 2. Graphitiにエピソード保存（非同期）
     addEpisode({

@@ -31,7 +31,7 @@ export async function handleInputPause(event: AgentEvent, config: AgentConfig) {
     if (!pageContent) return
 
     // 2. Graphiti検索（Graphiti未接続時はスキップ）
-    const groupId = `user:${config.ownerId || event.userId}`
+    const groupId = `user-${config.ownerId || event.userId}`
     const facts = await searchFacts({ query: contextText, groupId })
     const graphitiFacts = formatFactsForPrompt(facts)
 
