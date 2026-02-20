@@ -20,12 +20,14 @@ interface UseAgentEventsOptions {
   pageId: string
   userId: string
   enabled: boolean
+  agentId?: string | null
 }
 
 const INPUT_PAUSE_MS = 3000
 
-export function useAgentEvents({ editor, provider, pageId, userId, enabled }: UseAgentEventsOptions) {
+export function useAgentEvents({ editor, provider, pageId, userId, enabled, agentId }: UseAgentEventsOptions) {
   const pauseTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const lastMentionCount = useRef(0)
 
   const sendEvent = useCallback((type: AgentEventType, payload: Record<string, unknown> = {}) => {
     if (!provider) return
@@ -89,6 +91,29 @@ export function useAgentEvents({ editor, provider, pageId, userId, enabled }: Us
     editor.on('transaction', onTransaction)
     return () => { editor.off('transaction', onTransaction) }
   }, [editor, enabled, sendEvent])
+
+  // mention: @agentメンション検出（新規追加時のみ）
+  useEffect(() => {
+    if (!editor || !enabled || !agentId) return
+
+    const onTransaction = ({ transaction }: { transaction: { docChanged: boolean; doc: { nodesBetween: (from: number, to: number, cb: (node: { type: { name: string }; attrs: { id?: string } }, pos: number) => boolean | void) => void; textBetween: (from: number, to: number, sep?: string) => string; content: { size: number } } } }) => {
+      if (!transaction.docChanged) return
+      // 現在のdoc内のagentメンション数をカウント
+      let count = 0
+      transaction.doc.nodesBetween(0, transaction.doc.content.size, (node) => {
+        if (node.type.name === 'mention' && node.attrs.id === agentId) count++
+      })
+      // 新しいメンションが追加された場合のみ発火
+      if (count > lastMentionCount.current) {
+        const pageText = editor.getText()
+        sendEvent('mention', { instructionText: pageText.substring(0, 500) })
+      }
+      lastMentionCount.current = count
+    }
+
+    editor.on('transaction', onTransaction)
+    return () => { editor.off('transaction', onTransaction) }
+  }, [editor, enabled, agentId, sendEvent])
 
   // page_transition: アンマウント時
   useEffect(() => {
