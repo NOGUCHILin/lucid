@@ -18,7 +18,7 @@ export async function handleMention(event: AgentEvent, config: AgentConfig) {
     if (!pageContent) return
 
     // 2. Graphiti検索
-    const groupId = `user:${config.ownerId || event.userId}`
+    const groupId = `user-${config.ownerId || event.userId}`
     const facts = await searchFacts({ query: instructionText || pageContent.substring(0, 200), groupId })
     const graphitiFacts = formatFactsForPrompt(facts)
 
