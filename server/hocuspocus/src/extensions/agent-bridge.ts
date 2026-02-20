@@ -1,6 +1,9 @@
 import type { Extension, onRequestPayload } from '@hocuspocus/server'
 import { writeToPage, readPage } from '../agent-writer'
-import { startAgentLoop, stopAgentLoop, getLatestSuggestion } from '../agent-loop'
+import { startAgentLoop, stopAgentLoop } from '../agent-loop'
+import { getLatestSuggestion } from '../handlers/input-pause-handler'
+import { getTransitionSuggestion } from '../handlers/page-transition-handler'
+import { dispatch, type AgentEvent } from '../event-router'
 import { supabase, supabaseKey } from '../supabase'
 import type { IncomingMessage, ServerResponse } from 'http'
 
@@ -75,6 +78,22 @@ export const agentBridgeExtension: Extension = {
   async afterUnloadDocument({ documentName }) {
     stopAgentLoop(documentName)
     pageAgents.delete(documentName)
+  },
+
+  async onStateless({ payload, document: documentName }) {
+    try {
+      const event = JSON.parse(payload) as { type: string; [key: string]: unknown }
+      if (event.type === 'agentEvent') {
+        const agentEvent = event.data as AgentEvent
+        const pageId = agentEvent.pageId || (documentName as unknown as string)
+        const agentInfo = pageAgents.get(pageId)
+        if (agentInfo) {
+          dispatch(agentEvent, { ...agentInfo, pageId })
+        }
+      }
+    } catch {
+      // invalid JSON or missing fields — ignore
+    }
   },
 
   async onRequest(data: onRequestPayload) {
@@ -169,7 +188,7 @@ async function handleSuggest(request: IncomingMessage, response: ServerResponse)
       return
     }
 
-    const suggestion = getLatestSuggestion(pageId)
+    const suggestion = getLatestSuggestion(pageId) || getTransitionSuggestion(pageId)
     response.writeHead(200, {
       'Content-Type': 'application/json',
       'Access-Control-Allow-Origin': '*',

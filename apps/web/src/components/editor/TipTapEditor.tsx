@@ -8,6 +8,7 @@ import { HocuspocusProvider } from '@hocuspocus/provider'
 import * as Y from 'yjs'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useBehaviorTracker } from '@/hooks/useBehaviorTracker'
+import { useAgentEvents } from '@/hooks/useAgentEvents'
 import { ApprovalCard } from './extensions/approval-card'
 import { MentionExtension } from './extensions/mention'
 import { ImageUpload } from './extensions/image-upload'
@@ -34,7 +35,7 @@ export function TipTapEditor({
   onTextUpdate,
   enableSuggestion = false,
 }: TipTapEditorProps) {
-  const [status, setStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting')
+  const [, setStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting')
 
   const { ydoc, provider } = useMemo(() => {
     const ydoc = new Y.Doc()
@@ -115,6 +116,7 @@ export function TipTapEditor({
   }, [ydoc, provider])
 
   useBehaviorTracker({ editor, pageId, userId })
+  useAgentEvents({ editor, provider, pageId, userId, enabled: enableSuggestion })
 
   // Idle detection: 30s no activity → away
   useEffect(() => {

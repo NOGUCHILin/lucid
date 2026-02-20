@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { Search, PanelLeftClose, PanelLeft, UserPlus, Users, Bot, ChevronUp } from 'lucide-react'
+import { Search, PanelLeftClose, PanelLeft, UserPlus, Users, Bot } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { WalletWidget } from '@/components/wallet/WalletWidget'
