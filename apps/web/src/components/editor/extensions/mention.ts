@@ -5,19 +5,32 @@ interface MentionItem {
   id: string
   name: string
   email: string
+  isAgent?: boolean
 }
 
-// Simple suggestion config: fetches users from API
+// エージェント候補を保持するグローバル変数（configure時に設定）
+let _agentId: string | null = null
+let _agentName: string = 'Agent'
+
+// Simple suggestion config: fetches users from API + agent
 const suggestion: Partial<SuggestionOptions<MentionItem>> = {
   items: async ({ query }) => {
     if (!query || query.length < 1) return []
+    const results: MentionItem[] = []
+
+    // エージェント候補
+    if (_agentId && 'agent'.startsWith(query.toLowerCase())) {
+      results.push({ id: _agentId, name: _agentName, email: '', isAgent: true })
+    }
+
     try {
       const res = await fetch(`/api/users/search?q=${encodeURIComponent(query)}`)
-      if (!res.ok) return []
-      return await res.json()
-    } catch {
-      return []
-    }
+      if (res.ok) {
+        const users = await res.json()
+        results.push(...users)
+      }
+    } catch { /* ignore */ }
+    return results
   },
   render: () => {
     let popup: HTMLDivElement | null = null
@@ -67,12 +80,28 @@ function updatePopup(popup: HTMLDivElement, props: SuggestionProps<MentionItem>)
   items.forEach((item: MentionItem) => {
     const btn = document.createElement('button')
     btn.className = 'block w-full rounded px-3 py-1.5 text-left hover:bg-neutral-100'
-    btn.textContent = item.name || item.email || item.id
+    if (item.isAgent) {
+      btn.innerHTML = `<span class="text-violet-600 font-medium">${item.name}</span> <span class="text-xs text-neutral-400">AI</span>`
+    } else {
+      btn.textContent = item.name || item.email || item.id
+    }
     btn.addEventListener('click', () => command({ id: item.id, label: item.name || item.email }))
     popup.appendChild(btn)
   })
 }
 
+export function createMentionExtension(agentId?: string | null, agentName?: string) {
+  _agentId = agentId || null
+  _agentName = agentName || 'Agent'
+  return Mention.configure({
+    HTMLAttributes: {
+      class: 'mention bg-blue-100 text-blue-800 rounded px-1',
+    },
+    suggestion,
+  })
+}
+
+/** 後方互換: agentなしデフォルト */
 export const MentionExtension = Mention.configure({
   HTMLAttributes: {
     class: 'mention bg-blue-100 text-blue-800 rounded px-1',

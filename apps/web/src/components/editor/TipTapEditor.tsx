@@ -10,7 +10,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useBehaviorTracker } from '@/hooks/useBehaviorTracker'
 import { useAgentEvents } from '@/hooks/useAgentEvents'
 import { ApprovalCard } from './extensions/approval-card'
-import { MentionExtension } from './extensions/mention'
+import { createMentionExtension } from './extensions/mention'
 import { ImageUpload } from './extensions/image-upload'
 import { CodeBlockHighlight } from './extensions/code-block-highlight'
 import { InlineSuggestion } from './extensions/inline-suggestion'
@@ -25,6 +25,8 @@ interface TipTapEditorProps {
   onTextUpdate?: (text: string) => void
   /** 環境エージェントのインライン補完を有効にする */
   enableSuggestion?: boolean
+  /** ページに割り当てられたエージェントID */
+  agentId?: string | null
 }
 
 export function TipTapEditor({
@@ -34,6 +36,7 @@ export function TipTapEditor({
   userColor = '#3b82f6',
   onTextUpdate,
   enableSuggestion = false,
+  agentId,
 }: TipTapEditorProps) {
   const [, setStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting')
 
@@ -93,14 +96,14 @@ export function TipTapEditor({
       user: { name: userName, color: userColor },
     }),
     ApprovalCard,
-    MentionExtension,
+    createMentionExtension(agentId),
     ImageUpload,
     CodeBlockHighlight,
     InlineSuggestion.configure({
       fetchSuggestion,
       delay: 2000,
     }),
-  ], [ydoc, provider, userName, userColor, fetchSuggestion])
+  ], [ydoc, provider, userName, userColor, fetchSuggestion, agentId])
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -116,7 +119,7 @@ export function TipTapEditor({
   }, [ydoc, provider])
 
   useBehaviorTracker({ editor, pageId, userId })
-  useAgentEvents({ editor, provider, pageId, userId, enabled: enableSuggestion })
+  useAgentEvents({ editor, provider, pageId, userId, enabled: enableSuggestion, agentId })
 
   // Idle detection: 30s no activity → away
   useEffect(() => {

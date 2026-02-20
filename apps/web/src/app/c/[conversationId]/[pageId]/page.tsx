@@ -174,7 +174,7 @@ export default function ConversationPageView({
       <div className="flex flex-1 min-h-0 gap-0 md:flex-none md:gap-4 max-w-full md:max-w-[calc(var(--page-width)+320px)] mx-auto">
         {/* Editor */}
         <div className="flex-1 min-w-0 overflow-y-auto md:overflow-visible">
-          <TipTapEditor pageId={pageId} userId={userId} onTextUpdate={onUpdate} enableSuggestion={convType === 'agent'} />
+          <TipTapEditor pageId={pageId} userId={userId} onTextUpdate={onUpdate} enableSuggestion={convType === 'agent'} agentId={agentId} />
 
           {/* Page Navigation — デスクトップ */}
           <div className="hidden md:flex max-w-[var(--page-width)] mx-auto mt-3 items-center justify-between">
