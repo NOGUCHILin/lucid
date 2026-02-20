@@ -34,13 +34,13 @@ export const InlineSuggestion = Extension.create<InlineSuggestionOptions>({
         key: pluginKey,
         state: {
           init() {
-            return { suggestion: '', decorations: DecorationSet.empty }
+            return { suggestion: '', pos: 0, decorations: DecorationSet.empty }
           },
           apply(tr, value, _oldState, newState) {
             // メタデータでsuggest/clearを管理
             const meta = tr.getMeta(pluginKey)
             if (meta?.clear) {
-              return { suggestion: '', decorations: DecorationSet.empty }
+              return { suggestion: '', pos: 0, decorations: DecorationSet.empty }
             }
             if (meta?.suggestion) {
               const pos = newState.selection.$head.pos
@@ -51,14 +51,13 @@ export const InlineSuggestion = Extension.create<InlineSuggestionOptions>({
                 span.style.color = '#9ca3af'
                 span.style.cursor = 'pointer'
                 span.setAttribute('data-suggestion', 'true')
-                // タップ/クリックで承認
+                // タップ/クリックで承認（ウィジェット作成時のposを使用）
                 span.addEventListener('click', (e) => {
                   e.preventDefault()
                   e.stopPropagation()
                   if (!view) return
                   const { tr } = view.state
-                  const insertPos = view.state.selection.$head.pos
-                  const insertTr = tr.insertText(suggestionText, insertPos)
+                  const insertTr = tr.insertText(suggestionText, pos)
                   insertTr.setMeta(pluginKey, { clear: true })
                   view.dispatch(insertTr)
                 })
@@ -66,16 +65,18 @@ export const InlineSuggestion = Extension.create<InlineSuggestionOptions>({
               }, { side: 1 })
               return {
                 suggestion: meta.suggestion,
+                pos,
                 decorations: DecorationSet.create(newState.doc, [widget]),
               }
             }
             // doc変更時はクリア
             if (tr.docChanged) {
-              return { suggestion: '', decorations: DecorationSet.empty }
+              return { suggestion: '', pos: 0, decorations: DecorationSet.empty }
             }
             // デコレーションをmapして返す
             return {
               suggestion: value.suggestion,
+              pos: tr.mapping.map(value.pos),
               decorations: value.decorations.map(tr.mapping, tr.doc),
             }
           },
@@ -88,12 +89,11 @@ export const InlineSuggestion = Extension.create<InlineSuggestionOptions>({
             const state = pluginKey.getState(view.state)
             if (!state?.suggestion) return false
 
-            // Tab → 提案を受け入れ
+            // Tab → 提案を受け入れ（ウィジェット位置に挿入）
             if (event.key === 'Tab') {
               event.preventDefault()
               const { tr } = view.state
-              const pos = view.state.selection.$head.pos
-              const clearTr = tr.insertText(state.suggestion, pos)
+              const clearTr = tr.insertText(state.suggestion, state.pos)
               clearTr.setMeta(pluginKey, { clear: true })
               view.dispatch(clearTr)
               return true
