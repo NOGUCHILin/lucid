@@ -6,14 +6,14 @@ import Collaboration from '@tiptap/extension-collaboration'
 import CollaborationCaret from '@tiptap/extension-collaboration-caret'
 import { HocuspocusProvider } from '@hocuspocus/provider'
 import * as Y from 'yjs'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useBehaviorTracker } from '@/hooks/useBehaviorTracker'
 import { useAgentEvents } from '@/hooks/useAgentEvents'
 import { ApprovalCard } from './extensions/approval-card'
 import { createMentionExtension } from './extensions/mention'
 import { ImageUpload } from './extensions/image-upload'
 import { CodeBlockHighlight } from './extensions/code-block-highlight'
-import { InlineSuggestion } from './extensions/inline-suggestion'
+import { InlineSuggestion, pluginKey as inlineSuggestionKey } from './extensions/inline-suggestion'
 import { PresenceBar } from './PresenceBar'
 import { TypingIndicator } from './TypingIndicator'
 
@@ -63,26 +63,6 @@ export function TipTapEditor({
     }
   }, [provider, ydoc])
 
-  // refでenableSuggestionの最新値を保持（エディタ再作成不要）
-  const enableSuggestionRef = useRef(enableSuggestion)
-  useEffect(() => { enableSuggestionRef.current = enableSuggestion }, [enableSuggestion])
-
-  const fetchSuggestion = useCallback(async () => {
-    if (!enableSuggestionRef.current) return ''
-    try {
-      const res = await fetch('/api/suggest', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pageId }),
-      })
-      if (!res.ok) return ''
-      const data = await res.json()
-      return data.suggestion || ''
-    } catch {
-      return ''
-    }
-  }, [pageId])
-
   const extensions = useMemo(() => [
     StarterKit.configure({
       undoRedo: false,
@@ -99,11 +79,8 @@ export function TipTapEditor({
     createMentionExtension(agentId),
     ImageUpload,
     CodeBlockHighlight,
-    InlineSuggestion.configure({
-      fetchSuggestion,
-      delay: 2000,
-    }),
-  ], [ydoc, provider, userName, userColor, fetchSuggestion, agentId])
+    InlineSuggestion,
+  ], [ydoc, provider, userName, userColor, agentId])
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -120,6 +97,27 @@ export function TipTapEditor({
 
   useBehaviorTracker({ editor, pageId, userId })
   useAgentEvents({ editor, provider, pageId, userId, enabled: enableSuggestion, agentId })
+
+  // サーバーPush: provider.on('stateless') で提案を受信しインライン表示
+  useEffect(() => {
+    if (!provider || !editor || !enableSuggestion) return
+
+    const handler = ({ payload }: { payload: string }) => {
+      try {
+        const data = JSON.parse(payload)
+        if (data.type === 'suggestion' && data.suggestion) {
+          const { tr } = editor.state
+          tr.setMeta(inlineSuggestionKey, { suggestion: data.suggestion })
+          editor.view.dispatch(tr)
+        }
+      } catch {
+        // invalid JSON — ignore
+      }
+    }
+
+    provider.on('stateless', handler)
+    return () => { provider.off('stateless', handler) }
+  }, [provider, editor, enableSuggestion])
 
   // Idle detection: 30s no activity → away
   useEffect(() => {
