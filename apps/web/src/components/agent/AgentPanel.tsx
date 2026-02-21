@@ -1,10 +1,19 @@
 'use client'
 
+import { useState } from 'react'
 import { useAgent } from '@/hooks/useAgent'
 import { TrustSlider } from './TrustSlider'
 import { TrustHistory } from './TrustHistory'
 import { CostBar } from './CostBar'
 import { FundTransfer } from './FundTransfer'
+import { AgentCreateDialog } from './AgentCreateDialog'
+import { Button } from '@/components/ui/button'
+
+const PROVIDER_LABELS: Record<string, string> = {
+  deepseek: 'DeepSeek',
+  openai: 'OpenAI',
+  anthropic: 'Anthropic',
+}
 
 interface AgentPanelProps {
   agentId: string | null
@@ -12,11 +21,16 @@ interface AgentPanelProps {
 
 export function AgentPanel({ agentId }: AgentPanelProps) {
   const { agent, loading, updateTrust, refetch } = useAgent(agentId)
+  const [createOpen, setCreateOpen] = useState(false)
 
   if (!agentId) {
     return (
-      <div className="p-4 text-sm text-muted-foreground">
-        エージェント未割当
+      <div className="flex flex-col gap-3 p-4">
+        <div className="text-sm text-muted-foreground">エージェント未割当</div>
+        <Button variant="outline" size="sm" onClick={() => setCreateOpen(true)}>
+          エージェントを作成
+        </Button>
+        <AgentCreateDialog open={createOpen} onOpenChange={setCreateOpen} onCreated={refetch} />
       </div>
     )
   }
@@ -29,6 +43,8 @@ export function AgentPanel({ agentId }: AgentPanelProps) {
     return <div className="p-4 text-sm text-red-500">エージェントが見つかりません</div>
   }
 
+  const providerName = PROVIDER_LABELS[agent.config?.provider as string] || 'DeepSeek'
+
   return (
     <div className="flex flex-col gap-4 p-4">
       {/* Header */}
@@ -39,6 +55,11 @@ export function AgentPanel({ agentId }: AgentPanelProps) {
         }`}>
           {agent.status === 'active' ? '稼働中' : '停止'}
         </span>
+      </div>
+
+      {/* Provider */}
+      <div className="text-xs text-muted-foreground">
+        LLM: {providerName}
       </div>
 
       {/* Trust Slider */}
@@ -60,6 +81,12 @@ export function AgentPanel({ agentId }: AgentPanelProps) {
 
       {/* Fund Transfer */}
       <FundTransfer agentId={agent.id} onTransfer={refetch} />
+
+      {/* Create New Agent */}
+      <Button variant="outline" size="sm" onClick={() => setCreateOpen(true)}>
+        新しいエージェントを作成
+      </Button>
+      <AgentCreateDialog open={createOpen} onOpenChange={setCreateOpen} onCreated={refetch} />
     </div>
   )
 }

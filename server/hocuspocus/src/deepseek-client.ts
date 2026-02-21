@@ -1,7 +1,9 @@
 /**
  * DeepSeek API クライアント（OpenAI互換）
- * トークン使用量→JPYコスト計算を提供
+ * llmConfig指定時はマルチLLMクライアントに委譲
  */
+
+import { callLLM, type LLMConfig, type LLMResponse, calculateCost as multiCalculateCost } from './llm-client'
 
 const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY || ''
 const DEEPSEEK_BASE_URL = process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com'
@@ -12,12 +14,7 @@ const JPY_PER_USD = 150
 const COST_PER_INPUT_TOKEN = (0.28 / 1_000_000) * JPY_PER_USD   // ¥0.000042
 const COST_PER_OUTPUT_TOKEN = (0.42 / 1_000_000) * JPY_PER_USD  // ¥0.000063
 
-export interface LLMResponse {
-  text: string
-  inputTokens: number
-  outputTokens: number
-  costJpy: number
-}
+export type { LLMResponse, LLMConfig }
 
 export function calculateCost(inputTokens: number, outputTokens: number): number {
   return Math.ceil(
@@ -32,13 +29,9 @@ export async function generateAgentResponse(params: {
   recentEvents: string
   trustScore: number
   agentName: string
+  llmConfig?: LLMConfig
 }): Promise<LLMResponse | null> {
-  if (!DEEPSEEK_API_KEY) {
-    console.warn('[deepseek-client] DEEPSEEK_API_KEY not set, skipping')
-    return null
-  }
-
-  const systemPrompt = `あなたは共同編集ドキュメントに存在する環境型AIアシスタント「${params.agentName}」です。
+  const systemPrompt = params.llmConfig?.systemPrompt || `あなたは共同編集ドキュメントに存在する環境型AIアシスタント「${params.agentName}」です。
 ユーザーの行動を観察し、困っている時や探している時にだけ自然に補助します。
 侵入的にならず、短く的確な助言を日本語で提供してください。
 
@@ -56,6 +49,21 @@ ${params.pageContent.substring(0, 2000)}
 ${params.recentEvents}
 
 上記を踏まえ、ユーザーを助ける短いテキスト（1-3文）を生成してください。`
+
+  // マルチLLM: llmConfig指定時は callLLM に委譲
+  if (params.llmConfig) {
+    return callLLM(
+      params.llmConfig,
+      [{ role: 'system', content: systemPrompt }, { role: 'user', content: userMessage }],
+      300,
+    )
+  }
+
+  // デフォルト: DeepSeek直接呼び出し
+  if (!DEEPSEEK_API_KEY) {
+    console.warn('[deepseek-client] DEEPSEEK_API_KEY not set, skipping')
+    return null
+  }
 
   try {
     const response = await fetch(`${DEEPSEEK_BASE_URL}/v1/chat/completions`, {
@@ -105,13 +113,9 @@ export async function generateAmbientResponse(params: {
   graphitiFacts?: string
   userName: string
   agentName: string
+  llmConfig?: LLMConfig
 }): Promise<LLMResponse | null> {
-  if (!DEEPSEEK_API_KEY) {
-    console.warn('[deepseek-client] DEEPSEEK_API_KEY not set, skipping')
-    return null
-  }
-
-  const systemPrompt = `あなたは「${params.userName}」の環境型AIアシスタントです。
+  const systemPrompt = params.llmConfig?.systemPrompt || `あなたは「${params.userName}」の環境型AIアシスタントです。
 ${params.userName}の全会話の文脈を把握しており、${params.userName}のように考え、提案します。
 
 ## あなたの役割
@@ -129,6 +133,22 @@ ${params.graphitiFacts ? `\n## 関連する過去の知識\n${params.graphitiFac
 ${params.pageContent.substring(0, 2000)}
 
 上記テキストの続きとして${params.userName}が書きそうな次の1文を提案してください。提案文のみ出力。`
+
+  // マルチLLM: llmConfig指定時は callLLM に委譲
+  if (params.llmConfig) {
+    return callLLM(
+      params.llmConfig,
+      [{ role: 'system', content: systemPrompt }, { role: 'user', content: userMessage }],
+      150,
+      0.7,
+    )
+  }
+
+  // デフォルト: DeepSeek直接呼び出し
+  if (!DEEPSEEK_API_KEY) {
+    console.warn('[deepseek-client] DEEPSEEK_API_KEY not set, skipping')
+    return null
+  }
 
   try {
     const response = await fetch(`${DEEPSEEK_BASE_URL}/v1/chat/completions`, {

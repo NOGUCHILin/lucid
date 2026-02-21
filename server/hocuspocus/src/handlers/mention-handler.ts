@@ -22,7 +22,7 @@ export async function handleMention(event: AgentEvent, config: AgentConfig) {
     const facts = await searchFacts({ query: instructionText || pageContent.substring(0, 200), groupId })
     const graphitiFacts = formatFactsForPrompt(facts)
 
-    // 3. DeepSeek応答生成
+    // 3. LLM応答生成（llmConfig指定時はマルチLLM）
     const response = await generateAgentResponse({
       pageContent,
       intent: 'mention',
@@ -30,6 +30,7 @@ export async function handleMention(event: AgentEvent, config: AgentConfig) {
       recentEvents: `@mention: ${instructionText}${graphitiFacts ? `\n\n関連知識:\n${graphitiFacts}` : ''}`,
       trustScore: config.trustScore,
       agentName: config.agentName,
+      llmConfig: config.llmConfig,
     })
 
     if (!response) return
