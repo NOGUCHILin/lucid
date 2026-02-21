@@ -47,13 +47,14 @@ export async function handleInputPause(event: AgentEvent, config: AgentConfig) {
       if (data?.display_name) userName = data.display_name
     }
 
-    // 4. DeepSeek提案生成
+    // 4. LLM提案生成（llmConfig指定時はマルチLLM）
     const response = await generateAmbientResponse({
       pageContent,
       crossContextSummaries: '',
       graphitiFacts,
       userName,
       agentName: config.agentName,
+      llmConfig: config.llmConfig,
     })
 
     if (response?.text) {

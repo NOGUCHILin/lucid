@@ -4,6 +4,7 @@ import { registerAgent, unregisterAgent } from '../agent-loop'
 import { getLatestSuggestion } from '../handlers/input-pause-handler'
 import { getTransitionSuggestion } from '../handlers/page-transition-handler'
 import { dispatch, type AgentEvent } from '../event-router'
+import { extractLLMConfig } from '../llm-client'
 import { supabase, supabaseKey } from '../supabase'
 import type { IncomingMessage, ServerResponse } from 'http'
 
@@ -11,7 +12,7 @@ import type { IncomingMessage, ServerResponse } from 'http'
 const INTERNAL_API_SECRET = process.env.INTERNAL_API_SECRET || supabaseKey
 
 /** ページに割り当てられたエージェント情報をキャッシュ */
-const pageAgents = new Map<string, { agentId: string; agentName: string; trustScore: number; isAmbient?: boolean; ownerId?: string } | null>()
+const pageAgents = new Map<string, { agentId: string; agentName: string; trustScore: number; isAmbient?: boolean; ownerId?: string; llmConfig?: import('../llm-client').LLMConfig } | null>()
 
 /** Hocuspocusドキュメント参照（broadcastStateless用） */
 const documentInstances = new Map<string, { broadcastStateless(payload: string): void }>()
@@ -61,12 +62,14 @@ export const agentBridgeExtension: Extension = {
     if (data?.agent_id) {
       const agent = data.agents as unknown as { trust_score: number; name: string; config: Record<string, unknown> } | null
       const isAmbient = agent?.config?.type === 'ambient'
+      const llmConfig = agent?.config ? extractLLMConfig(agent.config) : undefined
       const info = {
         agentId: data.agent_id,
         agentName: agent?.name ?? 'Agent',
         trustScore: agent?.trust_score ?? 0,
         isAmbient,
         ownerId: data.owner_id as string | undefined,
+        llmConfig,
       }
       pageAgents.set(documentName, info)
 

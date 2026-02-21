@@ -19,6 +19,7 @@ export interface AgentConfig {
   trustScore: number
   isAmbient?: boolean
   ownerId?: string
+  llmConfig?: import('./llm-client').LLMConfig
 }
 
 // 重複イベント抑制

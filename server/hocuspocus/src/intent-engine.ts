@@ -2,8 +2,7 @@
  * 意図推論エンジン
  * ルールベース判定 → LLM呼び出し（必要時のみ）
  */
-import { z } from 'zod'
-import { generateStructured } from './llm-client'
+import { callLLM } from './llm-client'
 import { readPage } from './agent-writer'
 
 export type IntentType = 'stuck' | 'searching' | 'drafting' | 'idle' | 'unknown'
@@ -86,25 +85,29 @@ export async function inferWithLLM(
     const pageContent = await readPage(pageId)
     const recentEvents = events.slice(-10).map(e => `${e.event_type}: ${JSON.stringify(e.payload)}`).join('\n')
 
-    const result = await generateStructured(
+    const llmResult = await callLLM(
+      { provider: 'deepseek' },
       [
         {
           role: 'system',
-          content: 'You are an ambient AI assistant observing a user editing a document. Based on their behavior, infer their intent and suggest how to help. Respond in the same language as the document content.',
+          content: 'You are an ambient AI assistant observing a user editing a document. Based on their behavior, infer their intent and suggest how to help. Respond in JSON: {"intent":"stuck"|"searching"|"drafting"|"idle"|"unknown","confidence":0-1,"suggestion":"text"}',
         },
         {
           role: 'user',
           content: `Document content:\n${pageContent.substring(0, 1000)}\n\nRecent behavior:\n${recentEvents}\n\nRule-based inference: ${ruleResult.intent} (confidence: ${ruleResult.confidence})`,
         },
       ],
-      z.object({
-        intent: z.enum(['stuck', 'searching', 'drafting', 'idle', 'unknown']),
-        confidence: z.number().min(0).max(1),
-        suggestion: z.string().describe('A short, helpful suggestion text to insert into the document'),
-      })
+      300,
+      0.3,
     )
 
-    return result
+    if (!llmResult?.text) return ruleResult
+    const parsed = JSON.parse(llmResult.text)
+    return {
+      intent: parsed.intent || ruleResult.intent,
+      confidence: parsed.confidence ?? ruleResult.confidence,
+      suggestion: parsed.suggestion,
+    }
   } catch (e) {
     console.error('[intent-engine] LLM inference failed:', e)
     return ruleResult
