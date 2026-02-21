@@ -6,6 +6,7 @@ import type { AgentEvent, AgentConfig } from '../event-router'
 import { readPage } from '../agent-writer'
 import { searchFacts, formatFactsForPrompt } from '../graphiti-client'
 import { generateAmbientResponse } from '../deepseek-client'
+import { getDocumentInstance } from '../extensions/agent-bridge'
 import { supabase } from '../supabase'
 
 // 提案キャッシュ（suggest APIから取得用）
@@ -60,7 +61,15 @@ export async function handleInputPause(event: AgentEvent, config: AgentConfig) {
         text: response.text,
         generatedAt: Date.now(),
       })
-      console.log(`[input-pause] Suggestion cached: "${response.text.substring(0, 50)}..."`)
+
+      // サーバーPush: クライアントに提案を即時配信
+      const doc = getDocumentInstance(config.pageId)
+      if (doc) {
+        doc.broadcastStateless(JSON.stringify({ type: 'suggestion', suggestion: response.text }))
+        console.log(`[input-pause] Suggestion pushed: "${response.text.substring(0, 50)}..."`)
+      } else {
+        console.log(`[input-pause] Suggestion cached (no doc): "${response.text.substring(0, 50)}..."`)
+      }
 
       // コスト追跡
       if (supabase && response.costJpy > 0) {

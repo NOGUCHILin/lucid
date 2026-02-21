@@ -56,7 +56,3 @@ export function unregisterAgent(pageId: string) {
   setAgentAwareness(pageId, '', 'offline')
   console.log(`[agent-loop] Unregistered agent for page=${pageId}`)
 }
-
-// 後方互換: 旧APIからの呼び出しをサポート
-export const startAgentLoop = registerAgent
-export const stopAgentLoop = unregisterAgent

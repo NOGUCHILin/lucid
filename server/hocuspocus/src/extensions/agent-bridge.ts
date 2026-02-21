@@ -1,6 +1,6 @@
 import type { Extension, onRequestPayload } from '@hocuspocus/server'
 import { writeToPage, readPage } from '../agent-writer'
-import { startAgentLoop, stopAgentLoop } from '../agent-loop'
+import { registerAgent, unregisterAgent } from '../agent-loop'
 import { getLatestSuggestion } from '../handlers/input-pause-handler'
 import { getTransitionSuggestion } from '../handlers/page-transition-handler'
 import { dispatch, type AgentEvent } from '../event-router'
@@ -12,6 +12,13 @@ const INTERNAL_API_SECRET = process.env.INTERNAL_API_SECRET || supabaseKey
 
 /** ページに割り当てられたエージェント情報をキャッシュ */
 const pageAgents = new Map<string, { agentId: string; agentName: string; trustScore: number; isAmbient?: boolean; ownerId?: string } | null>()
+
+/** Hocuspocusドキュメント参照（broadcastStateless用） */
+const documentInstances = new Map<string, { broadcastStateless(payload: string): void }>()
+
+export function getDocumentInstance(pageId: string) {
+  return documentInstances.get(pageId) ?? null
+}
 
 function verifyInternalAuth(request: IncomingMessage): boolean {
   const authHeader = request.headers['authorization'] || ''
@@ -41,7 +48,9 @@ function parseBody(request: IncomingMessage): Promise<Record<string, unknown>> {
 }
 
 export const agentBridgeExtension: Extension = {
-  async onLoadDocument({ documentName }) {
+  async onLoadDocument({ documentName, document }: { documentName: string; document: { broadcastStateless(payload: string): void } }) {
+    documentInstances.set(documentName, document)
+
     if (!supabase) return
     const { data } = await supabase
       .from('pages')
@@ -62,7 +71,7 @@ export const agentBridgeExtension: Extension = {
       pageAgents.set(documentName, info)
 
       // AgentLoop を起動
-      startAgentLoop({
+      registerAgent({
         pageId: documentName,
         agentId: info.agentId,
         agentName: info.agentName,
@@ -75,17 +84,21 @@ export const agentBridgeExtension: Extension = {
     }
   },
 
-  async afterUnloadDocument({ documentName }) {
-    stopAgentLoop(documentName)
+  async afterUnloadDocument({ documentName }: { documentName: string }) {
+    unregisterAgent(documentName)
     pageAgents.delete(documentName)
+    documentInstances.delete(documentName)
   },
 
-  async onStateless({ payload, document: documentName }) {
+  async onStateless({ payload, document, documentName }: { payload: string; document: { broadcastStateless(p: string): void }; documentName: string }) {
+    if (document && documentName) {
+      documentInstances.set(documentName, document)
+    }
     try {
       const event = JSON.parse(payload) as { type: string; [key: string]: unknown }
       if (event.type === 'agentEvent') {
         const agentEvent = event.data as AgentEvent
-        const pageId = agentEvent.pageId || (documentName as unknown as string)
+        const pageId = agentEvent.pageId || documentName
         const agentInfo = pageAgents.get(pageId)
         if (agentInfo) {
           dispatch(agentEvent, { ...agentInfo, pageId })

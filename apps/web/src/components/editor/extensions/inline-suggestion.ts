@@ -7,28 +7,21 @@ import { Extension } from '@tiptap/core'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { Decoration, DecorationSet } from '@tiptap/pm/view'
 
-const pluginKey = new PluginKey('inlineSuggestion')
+export const pluginKey = new PluginKey('inlineSuggestion')
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface InlineSuggestionOptions {
-  /** 提案テキスト取得関数 */
-  fetchSuggestion: () => Promise<string>
-  /** 入力停止から提案表示までの遅延(ms) */
-  delay: number
+  // サーバーPush方式のため、オプション不要
 }
 
 export const InlineSuggestion = Extension.create<InlineSuggestionOptions>({
   name: 'inlineSuggestion',
 
   addOptions() {
-    return {
-      fetchSuggestion: async () => '',
-      delay: 2000,
-    }
+    return {}
   },
 
   addProseMirrorPlugins() {
-    const { fetchSuggestion, delay } = this.options
-
     return [
       new Plugin({
         key: pluginKey,
@@ -111,44 +104,8 @@ export const InlineSuggestion = Extension.create<InlineSuggestionOptions>({
             return false
           },
         },
-        view() {
-          let debounceTimer: ReturnType<typeof setTimeout> | null = null
-          let retryTimer: ReturnType<typeof setTimeout> | null = null
-
-          const tryFetch = async (view: import('@tiptap/pm/view').EditorView, attempt: number) => {
-            try {
-              const suggestion = await fetchSuggestion()
-              if (suggestion && view.dom.isConnected) {
-                const { tr } = view.state
-                tr.setMeta(pluginKey, { suggestion })
-                view.dispatch(tr)
-              } else if (!suggestion && attempt < 2 && view.dom.isConnected) {
-                // サーバーが提案生成中の可能性 → 3秒後にリトライ
-                retryTimer = setTimeout(() => tryFetch(view, attempt + 1), 3000)
-              }
-            } catch {
-              // 提案取得失敗は無視
-            }
-          }
-
-          return {
-            update(view, lastState) {
-              // doc が変わっていない場合はスキップ（メタのみのtransaction）
-              if (lastState && view.state.doc.eq(lastState.doc)) return
-
-              // タイマーリセット
-              if (debounceTimer) clearTimeout(debounceTimer)
-              if (retryTimer) clearTimeout(retryTimer)
-
-              // delay後に提案を取得（リトライ付き）
-              debounceTimer = setTimeout(() => tryFetch(view, 0), delay)
-            },
-            destroy() {
-              if (debounceTimer) clearTimeout(debounceTimer)
-              if (retryTimer) clearTimeout(retryTimer)
-            },
-          }
-        },
+        // サーバーPush方式: view()のポーリング不要
+        // 提案はTipTapEditor.tsxの provider.on('stateless') → tr.setMeta(pluginKey, { suggestion }) で注入
       }),
     ]
   },
